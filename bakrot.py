@@ -24,6 +24,7 @@ from datetime import timedelta
 #last_drive = 0
 
 
+
 class drive_pool():
     def __init__(self):
         self.drivepool = []
@@ -35,6 +36,10 @@ class drive_pool():
             return self.lastdrive
         else:
             return self.drivepool.pop()
+            
+    def add_drive(self, drive_number):
+        self.drivepool.append(drive_number)
+
 
 
 class rotation_level():
@@ -46,15 +51,25 @@ class rotation_level():
     def list_drives(self):
         for i in range(self.num_drives):
             print(i, self.drives[i])
+            
+    def is_used(self, iteration):
+        return (iteration % usage_interval == 0)
 
     def pull_from(self, other_level, pool, iteration):
-        pass
-
+        if self.is_used(iteration):
+            drive_index = iteration % self.num_drives
+            self.drives[drive_index] = other_level.pull_drive(iteration)
+            
     def free_drive(self, pool, iteration):
-        pass
+        if self.is_used(iteration):
+            drive_index = iteration % self.num_drives
+            pool.add_drive(self.drives[drive_index])
+            self.drives[drive_index] = self.drives[drive_index] * -1
 
     def next_drive(self, pool):
-        pass
+        if self.is_used(iteration):
+            drive_index = iteration % self.num_drives
+            self.drives[drive_index] = pool.get_next_drive
 
     def as_csv(self):
         s = ''
