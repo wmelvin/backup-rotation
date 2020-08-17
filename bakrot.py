@@ -143,13 +143,15 @@ l3 = rotation_level(3, 4, 4)
 #l2.list_drives()
 #l3.list_drives()
 
+n_weeks = 52
+
 if False:
     s = ",level-1,level-1,level-1,level-2,level-2,level-2,level-3,level-3,level-3"
     print(s)
     s = "i,usage_iteration,iteration_index,is_used,usage_iteration,iteration_index,is_used,usage_iteration,iteration_index,is_used"
     print(s)
     
-    for w in range(0,52):
+    for w in range(n_weeks):
         s = f"{w},{l1.usage_iteration(w)},{l1.iteration_index(w)},{l1.is_used(w):1}"
         s += f",{l2.usage_iteration(w)},{l2.iteration_index(w)},{l2.is_used(w):1}"
         s += f",{l3.usage_iteration(w)},{l3.iteration_index(w)},{l3.is_used(w):1}"
@@ -161,7 +163,7 @@ else:
     
     start_date = date(2020,7,4)
     
-    for w in range(0,20):
+    for w in range(n_weeks):
         d = start_date + timedelta(weeks=w)
         
         l1.start_iteration()
