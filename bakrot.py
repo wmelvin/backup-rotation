@@ -32,76 +32,81 @@ class rotation_level():
         self.usage_interval = usage_interval
         self.drives = []
         self.prevs = []
+        self.cycle_num = 0
+        self.cycle_date = 0
         for i in range(num_drives):
-            self.drives.append(0)
-            self.prevs.append(0)
+            self.drives.append((0,0))
+            self.prevs.append((0,0))
         #print("Drives: ", self.drives)
         
-    def start_iteration(self):
-        # Save the prevs list.
+    def start_cycle(self, cycle_num, cycle_date):
+        self.cycle_num = cycle_num
+        self.cycle_num = cycle_date
         for i in range(self.num_drives):
             self.prevs[i] = self.drives[i]
-        #self.prevs = self.drives
         
     def list_drives(self):
         for i in range(self.num_drives):
             print(f"level={self.level}, index={i}, drive={self.drives[i]}, previous={self.prevs[i]}")
             
-    def usage_iteration(self, iteration):
-        n =  (iteration // self.usage_interval)           
+    def usage_cycle(self, cycle):
+        n =  (cycle // self.usage_interval)           
         return n
             
-    def iteration_index(self, iteration):
-        n =  (self.usage_iteration(iteration) % self.num_drives)           
+    def cycle_index(self, cycle):
+        n =  (self.usage_cycle(cycle) % self.num_drives)           
         return n
             
-    def is_used(self, iteration):
-        return ((iteration + 1) % self.usage_interval == 0)
+    def is_used(self, cycle):
+        return ((cycle + 1) % self.usage_interval == 0)
 
-    def pull_drive(self, pool, iteration):
-        ix = self.iteration_index(iteration)
+    def pull_drive(self, pool, cycle):
+        ix = self.cycle_index(cycle)
         
-        #print(f"pull_drive: level={self.level}, iteration={iteration}, index={ix}")
+        #print(f"pull_drive: level={self.level}, cycle={cycle}, index={ix}")
         #self.list_drives()
         
-        n = int(self.drives[ix])
+        n = int(self.drives[ix][0])
         
-        #print(f"pull_drive: level={self.level}, iteration={iteration}, index={ix}, value={n}")
+        #print(f"pull_drive: level={self.level}, cycle={cycle}, index={ix}, value={n}")
         
         if 0 < n:
-            self.drives[ix] = (n * -1)
-            return n
+            self.drives[ix][0] = (n * -1)
+            return (n, self.drives[ix][1])
         else:
             return 0
             
-    def pull_from(self, other_level, pool, iteration):
-        if self.is_used(iteration):
-            ix = self.iteration_index(iteration)
+    def pull_from(self, other_level, pool, cycle):
+        if self.is_used(cycle):
+            ix = self.cycle_index(cycle)
             
-            #print(f"pull_from: level={self.level}, iteration={iteration}, index={ix}")
+            #print(f"pull_from: level={self.level}, cycle={cycle}, index={ix}")
             
-            self.drives[ix] = other_level.pull_drive(pool, iteration)
+            self.drives[ix] = other_level.pull_drive(pool, cycle)
                                     
-    def free_drive(self, pool, iteration):
-        if self.is_used(iteration):
-            ix = self.iteration_index(iteration)
+    def free_drive(self, pool, cycle):
+        if self.is_used(cycle):
+            ix = self.cycle_index(cycle)
             
-            #print(f"free_drive: level={self.level}, iteration={iteration}, index={ix}")
+            #print(f"free_drive: level={self.level}, cycle={cycle}, index={ix}")
             
-            pool.add_drive(self.drives[ix])
+            pool.add_drive(self.drives[ix][0])
             
-            n = int(self.drives[ix])
+            n = int(self.drives[ix][0])
+            d = self.drives[ix][1]
             n = n * -1
-            self.drives[ix] = n
+            self.drives[ix] = (n, d)
 
-    def next_drive(self, pool, iteration):
-        if self.is_used(iteration):
-            ix = self.iteration_index(iteration)
+    def next_drive(self, pool, cycle):
+        if self.is_used(cycle):
+            ix = self.cycle_index(cycle)
             
-            #print(f"next_drive: level={self.level}, iteration={iteration}, index={ix}")
+            #print(f"next_drive: level={self.level}, cycle={cycle}, index={ix}")
             
             self.prevs[ix] = self.drives[ix]
-            self.drives[ix] = pool.get_next_drive()
+            #self.drives[ix][0] = pool.get_next_drive()
+            #self.drives[ix][1] = self.cycle_date
+            self.drives[ix] = (pool.get_next_drive(), self.cycle_date)
 
     #def as_csv(self, is_heading=False):
     #    s = ''
@@ -115,7 +120,9 @@ class rotation_level():
     def csv_data(self):
         s = ''
         for i in range(self.num_drives):
-            s +=  "," + str(self.drives[i])
+            drv = self.drives[i][0]
+            dte = self.drives[i][1]
+            s +=  f",{str(drv)} ({str(dte)})"
         return s
         
     def csv_head(self):
@@ -128,8 +135,8 @@ class rotation_level():
         s = ''
         for i in range(self.num_drives):
             s += ","
-            if self.drives[i] != self.prevs[i]:
-              s += str(self.drives[i])
+            if self.drives[i][0] != self.prevs[i][0]:
+              s +=  f",{str(self.drives[i][0])} ({self.drives[i][1]})"
         return s
 
 
@@ -148,13 +155,13 @@ n_weeks = 52
 if False:
     s = ",level-1,level-1,level-1,level-2,level-2,level-2,level-3,level-3,level-3"
     print(s)
-    s = "i,usage_iteration,iteration_index,is_used,usage_iteration,iteration_index,is_used,usage_iteration,iteration_index,is_used"
+    s = "i,usage_cycle,cycle_index,is_used,usage_cycle,cycle_index,is_used,usage_cycle,cycle_index,is_used"
     print(s)
     
     for w in range(n_weeks):
-        s = f"{w},{l1.usage_iteration(w)},{l1.iteration_index(w)},{l1.is_used(w):1}"
-        s += f",{l2.usage_iteration(w)},{l2.iteration_index(w)},{l2.is_used(w):1}"
-        s += f",{l3.usage_iteration(w)},{l3.iteration_index(w)},{l3.is_used(w):1}"
+        s = f"{w},{l1.usage_cycle(w)},{l1.cycle_index(w)},{l1.is_used(w):1}"
+        s += f",{l2.usage_cycle(w)},{l2.cycle_index(w)},{l2.is_used(w):1}"
+        s += f",{l3.usage_cycle(w)},{l3.cycle_index(w)},{l3.is_used(w):1}"
         print(s)
 
 else:
@@ -166,9 +173,9 @@ else:
     for w in range(n_weeks):
         d = start_date + timedelta(weeks=w)
         
-        l1.start_iteration()
-        l2.start_iteration()
-        l3.start_iteration()
+        l1.start_cycle(w, d)
+        l2.start_cycle(w, d)
+        l3.start_cycle(w, d)
         
         l3.pull_from(l2, dp, w)
         
