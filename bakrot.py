@@ -31,14 +31,19 @@ class drive_pool():
         self.lastdrive = 0
 
     def get_next_drive(self):
+        #print("len(self.drivepool)=%d" % len(self.drivepool))
         if len(self.drivepool) == 0:
-            self.lastdrive += 1
-            return self.lastdrive
+            self.lastdrive = self.lastdrive + 1
+            n = self.lastdrive
         else:
-            return self.drivepool.pop()
+            n = self.drivepool.pop()
+        print("drive_pool.get_next_drive()=%d" % n)
+        return n
             
     def add_drive(self, drive_number):
-        self.drivepool.append(drive_number)
+        if 0 < drive_number:
+            print("drive_pool.add_drive(%d)" % drive_number)
+            self.drivepool.append(drive_number)
 
 
 
@@ -121,19 +126,27 @@ l1 = rotation_level(1, 7, 1)
 l2 = rotation_level(2, 5, 2)
 l3 = rotation_level(3, 4, 4)
 
-l1.list_drives()
-l2.list_drives()
-l3.list_drives()
+#l1.list_drives()
+#l2.list_drives()
+#l3.list_drives()
 
 
 start_date = date(2020,7,4)
-for w in range(0,3):
+
+for w in range(0,20):
     d = start_date + timedelta(weeks=w)
-    print(d)
+    
+    print("\n" + str(d))
+    
     l3.pull_from(l2, dp, w)
+    
     l2.pull_from(l1, dp, w)
+    
     l1.free_drive(dp, w)
+    
     print(w, l1.as_csv(), l2.as_csv(), l3.as_csv())
+    
     l1.next_drive(dp, w)
+    
     print(w, l1.as_csv(), l2.as_csv(), l3.as_csv())
 
