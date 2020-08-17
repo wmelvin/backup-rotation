@@ -20,8 +20,21 @@ from datetime import timedelta
 #for i in range(level_1_size):
 #  print(i, level_1_set[i])
 
-drive_pool = []
-last_drive = 0
+#drive_pool = []
+#last_drive = 0
+
+
+class drive_pool():
+    def __init__(self):
+        self.drivepool = []
+        self.lastdrive = 0
+        
+    def get_next_drive(self):
+        if len(self.drivepool) == 0:
+            self.lastdrive += 1
+            return self.lastdrive
+        else:
+            return self.drivepool.pop()            
 
 
 class rotation_level():
@@ -38,8 +51,6 @@ class rotation_level():
         pass
         
     def next_drive(self, pool):        
-        if len(pool) == 0:
-            last_drive += 1
         pass
         
     def as_csv(self):
