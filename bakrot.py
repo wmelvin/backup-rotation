@@ -43,7 +43,8 @@ class drive_pool():
 
 
 class rotation_level():
-    def __init__(self, num_drives, usage_interval):
+    def __init__(self, level, num_drives, usage_interval):
+        self.level = level
         self.num_drives = num_drives
         self.usage_interval = usage_interval
         self.drives = []
@@ -53,7 +54,7 @@ class rotation_level():
 
     def list_drives(self):
         for i in range(self.num_drives):
-            print(i, self.drives[i])
+            print(self.level, i, self.drives[i])
             
     def is_used(self, iteration):
         return (iteration % self.usage_interval == 0)
@@ -61,23 +62,23 @@ class rotation_level():
     def pull_drive(self, iteration):
         drive_index = iteration % self.num_drives
         
-        print("pull_drive")
-        print("iteration=%d" % iteration)
-        print("len(drives)=%d" % len(self.drives))
-        print("drive_index=%d" % drive_index)
+        #print("pull_drive")
+        #print("iteration=%d" % iteration)
+        #print("len(drives)=%d" % len(self.drives))
+        #print("drive_index=%d" % drive_index)
         
-        n = self.drives[drive_index]
-        #self.drives[drive_index] = n * -1
+        n = int(self.drives[drive_index])
+        self.drives[drive_index] = (n * -1)
         return n        
             
     def pull_from(self, other_level, pool, iteration):
         if self.is_used(iteration):
             drive_index = iteration % self.num_drives
             
-            print("pull_from")
-            print("iteration=%d" % iteration)
-            print("len(drives)=%d" % len(self.drives))
-            print("drive_index=%d" % drive_index)
+            #print("pull_from")
+            #print("iteration=%d" % iteration)
+            #print("len(drives)=%d" % len(self.drives))
+            #print("drive_index=%d" % drive_index)
             
             self.drives[drive_index] = other_level.pull_drive(iteration)
             
@@ -85,25 +86,25 @@ class rotation_level():
         if self.is_used(iteration):
             drive_index = iteration % self.num_drives
             
-            print("free_drive")
-            print("iteration=%d" % iteration)
-            print("len(drives)=%d" % len(self.drives))            
-            print("drive_index=%d" % drive_index)
+            #print("free_drive")
+            #print("iteration=%d" % iteration)
+            #print("len(drives)=%d" % len(self.drives))            
+            #print("drive_index=%d" % drive_index)
             
             pool.add_drive(self.drives[drive_index])
             
-            #n = self.drives[drive_index]
-            #n = n * -1
-            #self.drives[drive_index] = n
+            n = int(self.drives[drive_index])
+            n = n * -1
+            self.drives[drive_index] = n
 
     def next_drive(self, pool, iteration):
         if self.is_used(iteration):
             drive_index = iteration % self.num_drives
             
-            print("next_drive")
-            print("iteration=%d" % iteration)
-            print("len(drives)=%d" % len(self.drives))
-            print("drive_index=%d" % drive_index)
+            #print("next_drive")
+            #print("iteration=%d" % iteration)
+            #print("len(drives)=%d" % len(self.drives))
+            #print("drive_index=%d" % drive_index)
             
             self.drives[drive_index] = pool.get_next_drive()
 
@@ -116,13 +117,13 @@ class rotation_level():
 
 dp = drive_pool()
 
-l1 = rotation_level(7, 1)
-l2 = rotation_level(5, 2)
-l3 = rotation_level(4, 4)
+l1 = rotation_level(1, 7, 1)
+l2 = rotation_level(2, 5, 2)
+l3 = rotation_level(3, 4, 4)
 
-l1.list_drives
-l2.list_drives
-l3.list_drives
+l1.list_drives()
+l2.list_drives()
+l3.list_drives()
 
 
 start_date = date(2020,7,4)
