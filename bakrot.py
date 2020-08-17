@@ -62,15 +62,15 @@ class rotation_level():
             print(self.level, i, self.drives[i])
             
     def usage_iteration(self, iteration):
-        n =  (iteration / self.usage_interval)           
+        n =  (iteration // self.usage_interval)           
         return n
             
     def iteration_index(self, iteration):
-        n =  (iteration % self.usage_interval)           
+        n =  (self.usage_iteration(iteration) % self.num_drives)           
         return n
             
     def is_used(self, iteration):
-        return (iteration % self.usage_interval == 0)
+        return ((iteration + 1) % self.usage_interval == 0)
 
     def pull_drive(self, pool, iteration):
         drive_index = iteration % self.num_drives
@@ -151,7 +151,21 @@ l3 = rotation_level(3, 4, 4)
 #    
 #    print(w, l1.as_csv(), l2.as_csv(), l3.as_csv())
 
+
+s = ",level-1,level-1,level-1,level-2,level-2,level-2,level-3,level-3,level-3"
+print(s)
+s = "i,usage_iteration,iteration_index,is_used,usage_iteration,iteration_index,is_used,usage_iteration,iteration_index,is_used"
+print(s)
+
 for w in range(0,20):
-    print(w)
-    print(l1.usage_iteration(), l1.iteration_index(), l1.is_used())
+    #print(w)
+
+
+    s = f"{w},{l1.usage_iteration(w)},{l1.iteration_index(w)},{l1.is_used(w):1}"
+    s += f",{l2.usage_iteration(w)},{l2.iteration_index(w)},{l2.is_used(w):1}"
+    s += f",{l3.usage_iteration(w)},{l3.iteration_index(w)},{l3.is_used(w):1}"
+    print(s)
+    #print(l1.usage_iteration(w), l1.iteration_index(w), l1.is_used(w))
+    #print(l2.usage_iteration(w), l2.iteration_index(w), l2.is_used(w))
+    #print(l3.usage_iteration(w), l3.iteration_index(w), l3.is_used(w))
 
