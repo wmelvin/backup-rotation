@@ -73,46 +73,46 @@ class rotation_level():
         return ((iteration + 1) % self.usage_interval == 0)
 
     def pull_drive(self, pool, iteration):
-        drive_index = iteration % self.num_drives
-        print(f"pull_drive: level={self.level}, iteration={iteration}, len(drives)={len(self.drives)}, drive_index={drive_index}")
-        n = int(self.drives[drive_index])
+        ix = self.iteration_index(iteration)
         
-        print(f"pull_drive: level={self.level}, iteration={iteration}, len(drives)={len(self.drives)}, drive_index={drive_index}, value={n}")
+        #print(f"pull_drive: level={self.level}, iteration={iteration}, len(drives)={len(self.drives)}, drive_index={drive_index}")
+        
+        n = int(self.drives[ix])
+        
+        print(f"pull_drive: level={self.level}, iteration={iteration}, index={ix}, value={n}")
         
         if 0 < n:
             pool.add_drive(n)
-            self.drives[drive_index] = (n * -1)
+            self.drives[ix] = (n * -1)
             return n        
             
     def pull_from(self, other_level, pool, iteration):
         if self.is_used(iteration):
-            drive_index = iteration % self.num_drives
+            ix = self.iteration_index(iteration)
             
-            print(f"pull_from: level={self.level}, iteration={iteration}, len(drives)={len(self.drives)}, drive_index={drive_index}")
+            print(f"pull_from: level={self.level}, iteration={iteration}, index={ix}")
             
-            self.drives[drive_index] = other_level.pull_drive(pool, iteration)
-            
-            
-            
+            self.drives[ix] = other_level.pull_drive(pool, iteration)
+                                    
     def free_drive(self, pool, iteration):
         if self.is_used(iteration):
-            drive_index = iteration % self.num_drives
+            ix = self.iteration_index(iteration)
             
-            print(f"free_drive: level={self.level}, iteration={iteration}, len(drives)={len(self.drives)}, drive_index={drive_index}")
+            print(f"free_drive: level={self.level}, iteration={iteration}, index={ix}")
             
-            pool.add_drive(self.drives[drive_index])
+            pool.add_drive(self.drives[ix])
             
-            n = int(self.drives[drive_index])
+            n = int(self.drives[ix])
             n = n * -1
-            self.drives[drive_index] = n
+            self.drives[ix] = n
 
     def next_drive(self, pool, iteration):
         if self.is_used(iteration):
-            drive_index = iteration % self.num_drives
+            ix = self.iteration_index(iteration)
             
-            print(f"next_drive: level={self.level}, iteration={iteration}, len(drives)={len(self.drives)}, drive_index={drive_index}")
+            print(f"next_drive: level={self.level}, iteration={iteration}, index={ix}")
             
-            self.drives[drive_index] = pool.get_next_drive()
+            self.drives[ix] = pool.get_next_drive()
 
     def as_csv(self):
         s = ''
