@@ -61,40 +61,44 @@ class rotation_level():
         for i in range(self.num_drives):
             print(self.level, i, self.drives[i])
             
+    def usage_iteration(self, iteration):
+        n =  (iteration / self.usage_interval)           
+        return n
+            
+    def iteration_index(self, iteration):
+        n =  (iteration % self.usage_interval)           
+        return n
+            
     def is_used(self, iteration):
         return (iteration % self.usage_interval == 0)
 
-    def pull_drive(self, iteration):
+    def pull_drive(self, pool, iteration):
         drive_index = iteration % self.num_drives
-        
-        #print("pull_drive")
-        #print("iteration=%d" % iteration)
-        #print("len(drives)=%d" % len(self.drives))
-        #print("drive_index=%d" % drive_index)
-        
+        print(f"pull_drive: level={self.level}, iteration={iteration}, len(drives)={len(self.drives)}, drive_index={drive_index}")
         n = int(self.drives[drive_index])
-        self.drives[drive_index] = (n * -1)
-        return n        
+        
+        print(f"pull_drive: level={self.level}, iteration={iteration}, len(drives)={len(self.drives)}, drive_index={drive_index}, value={n}")
+        
+        if 0 < n:
+            pool.add_drive(n)
+            self.drives[drive_index] = (n * -1)
+            return n        
             
     def pull_from(self, other_level, pool, iteration):
         if self.is_used(iteration):
             drive_index = iteration % self.num_drives
             
-            #print("pull_from")
-            #print("iteration=%d" % iteration)
-            #print("len(drives)=%d" % len(self.drives))
-            #print("drive_index=%d" % drive_index)
+            print(f"pull_from: level={self.level}, iteration={iteration}, len(drives)={len(self.drives)}, drive_index={drive_index}")
             
-            self.drives[drive_index] = other_level.pull_drive(iteration)
+            self.drives[drive_index] = other_level.pull_drive(pool, iteration)
+            
+            
             
     def free_drive(self, pool, iteration):
         if self.is_used(iteration):
             drive_index = iteration % self.num_drives
             
-            #print("free_drive")
-            #print("iteration=%d" % iteration)
-            #print("len(drives)=%d" % len(self.drives))            
-            #print("drive_index=%d" % drive_index)
+            print(f"free_drive: level={self.level}, iteration={iteration}, len(drives)={len(self.drives)}, drive_index={drive_index}")
             
             pool.add_drive(self.drives[drive_index])
             
@@ -106,10 +110,7 @@ class rotation_level():
         if self.is_used(iteration):
             drive_index = iteration % self.num_drives
             
-            #print("next_drive")
-            #print("iteration=%d" % iteration)
-            #print("len(drives)=%d" % len(self.drives))
-            #print("drive_index=%d" % drive_index)
+            print(f"next_drive: level={self.level}, iteration={iteration}, len(drives)={len(self.drives)}, drive_index={drive_index}")
             
             self.drives[drive_index] = pool.get_next_drive()
 
@@ -131,22 +132,26 @@ l3 = rotation_level(3, 4, 4)
 #l3.list_drives()
 
 
-start_date = date(2020,7,4)
+#start_date = date(2020,7,4)
+#
+#for w in range(0,20):
+#    d = start_date + timedelta(weeks=w)
+#    
+#    print("\n" + str(d))
+#    
+#    l3.pull_from(l2, dp, w)
+#    
+#    l2.pull_from(l1, dp, w)
+#    
+#    l1.free_drive(dp, w)
+#    
+#    print(w, l1.as_csv(), l2.as_csv(), l3.as_csv())
+#    
+#    l1.next_drive(dp, w)
+#    
+#    print(w, l1.as_csv(), l2.as_csv(), l3.as_csv())
 
 for w in range(0,20):
-    d = start_date + timedelta(weeks=w)
-    
-    print("\n" + str(d))
-    
-    l3.pull_from(l2, dp, w)
-    
-    l2.pull_from(l1, dp, w)
-    
-    l1.free_drive(dp, w)
-    
-    print(w, l1.as_csv(), l2.as_csv(), l3.as_csv())
-    
-    l1.next_drive(dp, w)
-    
-    print(w, l1.as_csv(), l2.as_csv(), l3.as_csv())
+    print(w)
+    print(l1.usage_iteration(), l1.iteration_index(), l1.is_used())
 
