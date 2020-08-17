@@ -39,6 +39,9 @@ class rotation_level():
             self.prevs.append((0,0))
         #print("Drives: ", self.drives)
         
+    def set_drive(self, drive_index, drive_num, data_date):
+        self.drives[drive_index] = (drive_num, data_date)
+        
     def start_cycle(self, cycle_num, cycle_date):
         self.cycle_num = cycle_num
         self.cycle_num = cycle_date
@@ -71,8 +74,12 @@ class rotation_level():
         #print(f"pull_drive: level={self.level}, cycle={cycle}, index={ix}, value={n}")
         
         if 0 < n:
-            self.drives[ix][0] = (n * -1)
-            return (n, self.drives[ix][1])
+            
+            #self.drives[ix][0] = (n * -1)
+            d = self.drives[ix][1]
+            self.set_drive(ix, n * -1, d)
+            
+            return (n, d)
         else:
             return 0
             
@@ -82,7 +89,8 @@ class rotation_level():
             
             #print(f"pull_from: level={self.level}, cycle={cycle}, index={ix}")
             
-            self.drives[ix] = other_level.pull_drive(pool, cycle)
+            #self.drives[ix] = other_level.pull_drive(pool, cycle)
+            self.set_drive(ix, other_level.pull_drive(pool, cycle))
                                     
     def free_drive(self, pool, cycle):
         if self.is_used(cycle):
@@ -95,7 +103,7 @@ class rotation_level():
             n = int(self.drives[ix][0])
             d = self.drives[ix][1]
             n = n * -1
-            self.drives[ix] = (n, d)
+            self.set_drive(ix, n, d)
 
     def next_drive(self, pool, cycle):
         if self.is_used(cycle):
@@ -106,7 +114,8 @@ class rotation_level():
             self.prevs[ix] = self.drives[ix]
             #self.drives[ix][0] = pool.get_next_drive()
             #self.drives[ix][1] = self.cycle_date
-            self.drives[ix] = (pool.get_next_drive(), self.cycle_date)
+            
+            self.set_drive(ix, pool.get_next_drive(), self.cycle_date)
 
     #def as_csv(self, is_heading=False):
     #    s = ''
