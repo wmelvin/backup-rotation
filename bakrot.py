@@ -71,8 +71,11 @@ class RotationLevel():
             print(f"L{self.level} pull_drive: cycle={self.cycle_num}, index={self.cycle_index}, drive={n}, date={d}")
             return [n, d]
         else:
-            print(f"L{self.level} pull_drive: cycle={self.cycle_num}, index={self.cycle_index}, No drive to pull")
-            return [0,0]
+            if not self.next_level_down is None:
+                return self.next_level_down.pull_drive()
+            else:
+                print(f"L{self.level} pull_drive: cycle={self.cycle_num}, index={self.cycle_index}, No drive to pull")
+                return [0,0]
             
     def pull_from_lower_level(self):
         if self.in_cycle:
@@ -119,7 +122,7 @@ class RotationLevel():
 # Main script:
 
 start_date = date(2020,7,4)
-n_weeks = 10
+n_weeks = 20
 
 dp = DrivePool()
 
