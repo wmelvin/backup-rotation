@@ -36,14 +36,16 @@ class rotation_level():
         self.cycle_date = -1
         self.cycle_index = -1
         self.drives = [[0,0] for x in range(num_drives)]
-        self.prevs = self.drives.copy()
+        self.prevs = []
 
         #print("Drives: ", self.drives)
         
     def start_cycle(self, cycle_num, cycle_date):
         self.cycle_num = cycle_num
         self.cycle_date = cycle_date
-        self.prevs = self.drives.copy()
+
+        self.prevs = [[self.drives[x][0], self.drives[x][1]] for x in range(self.num_drives)]
+
         self.cycle_index = (self.usage_cycle(cycle_num) % self.num_drives)           
         print(f"L{self.level} start_cycle {cycle_num}, date={cycle_date}, index={self.cycle_index}")
         
@@ -110,8 +112,8 @@ class rotation_level():
         s = ''
         for i in range(self.num_drives):
             s += ","
-            if self.drives[i][0] != self.prevs[i][0]:
-              s +=  f",\"{str(self.drives[i][0])} ({self.drives[i][1]})\""
+            if self.drives[i] != self.prevs[i]:
+              s +=  f"\"{str(self.drives[i][0])} ({self.drives[i][1]})\""
         return s
 
 
@@ -143,8 +145,8 @@ if False:
 if True:
     out_list = []
     s = f"iter,date{l1.csv_head()},.{l2.csv_head()},.{l3.csv_head()},notes"
-    #print(s)
     out_list += f"{s}\n"
+    out_list2 = out_list.copy()
     
     start_date = date(2020,7,4)
     
@@ -161,11 +163,13 @@ if True:
         
         l1.free_drive(dp, w)
         
-        #print(f"{w},{d}{l1.csv_data()},{l2.csv_data()},{l3.csv_data()},before next drive")
+        s = f"{w},{d}{l1.csv_data()},{l2.csv_data()},{l3.csv_data()},before next drive"
+        out_list2 += f"{s}\n"
         
         l1.next_drive(dp, w)
         
-        #print(f"{w},{d}{l1.csv_diff()},{l2.csv_diff()},{l3.csv_diff()}")
+        s = f"{w},{d}{l1.csv_data()},{l2.csv_data()},{l3.csv_data()},after next drive"
+        out_list2 += f"{s}\n"
 
         s = f"{w},{d}{l1.csv_diff()},{l2.csv_diff()},{l3.csv_diff()}"
         out_list += f"{s}\n"
@@ -173,6 +177,8 @@ if True:
     with open('bakrot_output.csv', 'w') as out_file:
         out_file.writelines(out_list)
 
+    with open('bakrot_output_data.csv', 'w') as out_file:
+        out_file.writelines(out_list2)
 
 if False:
     l1.list_drives()
