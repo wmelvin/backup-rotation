@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 
+# 2020-08-17 
+
+from datetime import datetime
 from datetime import date
 from datetime import timedelta
 
+
 logfilename = 'bakrot_log.txt'
+
 
 def plog(msg):
     with open(logfilename,  'a') as log_file:        
         print(msg)
-        log_file.write(f"{msg}\n")
+        #log_file.write(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] {msg}\n")
+        log_file.write(f"[{datetime.now():%Y%m%d_%H%M%S}] {msg}\n")
 
 
 class DrivePool():
@@ -80,9 +86,15 @@ class RotationLevel():
             
     def pull_from_lower_level(self):
         if self.in_cycle:
-            plog(f"L{self.level} pull_from:  cycle={self.cycle_num}, index={self.cycle_index}")            
-            self.drives[self.cycle_index] = self.next_level_down.pull_drive()
-                                    
+            plog(f"L{self.level} pull_from_lower_level:  cycle={self.cycle_num}, index={self.cycle_index}")            
+
+            #self.drives[self.cycle_index] = self.next_level_down.pull_drive()
+            pulled = self.next_level_down.pull_drive()
+            if 0 < pulled[0]:
+                self.free_drive()
+                self.drives[self.cycle_index] = pulled
+
+
     def free_drive(self):
         if self.in_cycle:
             n = int(self.drives[self.cycle_index][0])
@@ -123,13 +135,17 @@ class RotationLevel():
 # Main script:
 
 start_date = date(2020,7,4)
-n_weeks = 20
+n_weeks = 104
 
 dp = DrivePool()
 
-l1 = RotationLevel(1, 4, 1, dp, None)
-l2 = RotationLevel(2, 3, 2, dp, l1)
-l3 = RotationLevel(3, 2, 4, dp, l2)
+#l1 = RotationLevel(1, 5, 1, dp, None)
+#l2 = RotationLevel(2, 3, 2, dp, l1)
+#l3 = RotationLevel(3, 2, 4, dp, l2)
+
+l1 = RotationLevel(1, 7, 1, dp, None)
+l2 = RotationLevel(2, 8, 2, dp, l1)
+l3 = RotationLevel(3, 6, 4, dp, l2)
 
 
 if False:
@@ -169,6 +185,7 @@ if True:
         l3.start_cycle(week_num, week_date)
         
         l3.pull_from_lower_level()        
+
         l2.pull_from_lower_level()
         
         l1.free_drive()
