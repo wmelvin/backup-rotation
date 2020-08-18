@@ -13,14 +13,15 @@ class drive_pool():
         if len(self.drivepool) == 0:
             self.lastdrive = self.lastdrive + 1
             n = self.lastdrive
+            print(f"drive_pool.get_next_drive()={n} new drive")
         else:
             n = self.drivepool.pop()
-        #print("drive_pool.get_next_drive()=%d" % n)
+            print(f"drive_pool.get_next_drive()={n} from pool")
         return n
             
     def add_drive(self, drive_number):
         if 0 < drive_number:
-            #print("drive_pool.add_drive(%d)" % drive_number)
+            print(f"drive_pool.add_drive({drive_number})")
             self.drivepool.append(drive_number)
 
 
@@ -46,7 +47,7 @@ class rotation_level():
         
     def list_drives(self):
         for i in range(self.num_drives):
-            print(f"level={self.level}, index={i}, drive={self.drives[i][0]}, previous={self.prevs[i][0]}")
+            print(f"level={self.level}, index={i}, drive={self.drives[i]}, previous={self.prevs[i]}")
             
     def usage_cycle(self, cycle):
         n =  (cycle // self.usage_interval)           
@@ -60,18 +61,13 @@ class rotation_level():
         return ((cycle + 1) % self.usage_interval == 0)
 
     def pull_drive(self, pool, cycle):
-        ix = self.cycle_index(cycle)
-        
-        #print(f"pull_drive: level={self.level}, cycle={cycle}, index={ix}")
-        #self.list_drives()
-        
+        ix = self.cycle_index(cycle)        
         n = int(self.drives[ix][0])
-        
-        #print(f"pull_drive: level={self.level}, cycle={cycle}, index={ix}, value={n}")
-        
+                
         if 0 < n:      
             d = self.drives[ix][1]      
             self.drives[ix][0] = (n * -1)            
+            print(f"pull_drive: level={self.level}, cycle={cycle}, index={ix}, drive={n}, date={d}")
             return [n, d]
         else:
             return [0,0]
@@ -80,7 +76,7 @@ class rotation_level():
         if self.is_used(cycle):
             ix = self.cycle_index(cycle)
             
-            #print(f"pull_from: level={self.level}, cycle={cycle}, index={ix}")
+            print(f"pull_from: level={self.level}, cycle={cycle}, index={ix}")
             
             self.drives[ix] = other_level.pull_drive(pool, cycle)
                                     
@@ -88,7 +84,7 @@ class rotation_level():
         if self.is_used(cycle):
             ix = self.cycle_index(cycle)
             
-            #print(f"free_drive: level={self.level}, cycle={cycle}, index={ix}")
+            print(f"free_drive: level={self.level}, cycle={cycle}, index={ix}")
             
             pool.add_drive(self.drives[ix][0])
             
@@ -100,7 +96,7 @@ class rotation_level():
         if self.is_used(cycle):
             ix = self.cycle_index(cycle)
             
-            #print(f"next_drive: level={self.level}, cycle={cycle}, index={ix}")
+            print(f"next_drive: level={self.level}, cycle={cycle}, index={ix}")
             
             #self.prevs[ix] = self.drives[ix]
 
@@ -113,7 +109,7 @@ class rotation_level():
     def csv_data(self):
         s = ''
         for i in range(self.num_drives):
-            s +=  f",{str(self.drives[i][0])} ({self.drives[i][1]})"
+            s +=  f",\"{str(self.drives[i][0])} ({self.drives[i][1]})\""
         return s
         
     def csv_head(self):
@@ -127,7 +123,7 @@ class rotation_level():
         for i in range(self.num_drives):
             s += ","
             if self.drives[i][0] != self.prevs[i][0]:
-              s +=  f",{str(self.drives[i][0])} ({self.drives[i][1]})"
+              s +=  f",\"{str(self.drives[i][0])} ({self.drives[i][1]})\""
         return s
 
 
@@ -137,9 +133,10 @@ l1 = rotation_level(1, 7, 1)
 l2 = rotation_level(2, 5, 2)
 l3 = rotation_level(3, 4, 4)
 
-l1.list_drives()
-l2.list_drives()
-l3.list_drives()
+if False:
+    l1.list_drives()
+    l2.list_drives()
+    l3.list_drives()
 
 n_weeks = 20
 
@@ -155,7 +152,8 @@ if False:
         s += f",{l3.usage_cycle(w)},{l3.cycle_index(w)},{l3.is_used(w):1}"
         print(s)
 
-if False:
+if True:
+    out_list = []
     s = f"iter,date{l1.csv_head()},.{l2.csv_head()},.{l3.csv_head()},notes"
     print(s)
     
@@ -174,9 +172,20 @@ if False:
         
         l1.free_drive(dp, w)
         
-        print(f"{w},{d}{l1.csv_data()},{l2.csv_data()},{l3.csv_data()},before next drive")
+        #print(f"{w},{d}{l1.csv_data()},{l2.csv_data()},{l3.csv_data()},before next drive")
         
         l1.next_drive(dp, w)
         
-        print(f"{w},{d}{l1.csv_diff()},{l2.csv_diff()},{l3.csv_diff()}")
+        #print(f"{w},{d}{l1.csv_diff()},{l2.csv_diff()},{l3.csv_diff()}")
 
+        s = f"{w},{d}{l1.csv_diff()},{l2.csv_diff()},{l3.csv_diff()}"
+        out_list += f"{s}\n"
+
+    with open('bakrot_output.csv', 'w') as out_file:
+        out_file.writelines(out_list)
+
+
+if False:
+    l1.list_drives()
+    l2.list_drives()
+    l3.list_drives()
