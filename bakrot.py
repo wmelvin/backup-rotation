@@ -32,18 +32,20 @@ class rotation_level():
         self.usage_interval = usage_interval
         self.drives = []
         self.prevs = []
-        self.cycle_num = 0
-        self.cycle_date = 0
-        for i in range(num_drives):
-            self.drives.append([0,0])
-            self.prevs.append([0,0])
+        self.cycle_num = -1
+        self.cycle_date = -1
+        self.cycle_index = -1
+        self.drives = [[0,0] for x in range(num_drives)]
+        self.prevs = self.drives.copy()
+
         #print("Drives: ", self.drives)
         
     def start_cycle(self, cycle_num, cycle_date):
         self.cycle_num = cycle_num
         self.cycle_date = cycle_date
-        for i in range(self.num_drives):
-            self.prevs[i] = self.drives[i]
+        self.prevs = self.drives.copy()
+        self.cycle_index = (self.usage_cycle(cycle_num) % self.num_drives)           
+        print(f"L{self.level} start_cycle {cycle_num}, date={cycle_date}, index={self.cycle_index}")
         
     def list_drives(self):
         for i in range(self.num_drives):
@@ -53,57 +55,43 @@ class rotation_level():
         n =  (cycle // self.usage_interval)           
         return n
             
-    def cycle_index(self, cycle):
-        n =  (self.usage_cycle(cycle) % self.num_drives)           
-        return n
+    #def cycle_index(self, cycle):
+    #    n =  (self.usage_cycle(cycle) % self.num_drives)           
+    #    return n
             
     def is_used(self, cycle):
         return ((cycle + 1) % self.usage_interval == 0)
 
     def pull_drive(self, pool, cycle):
-        ix = self.cycle_index(cycle)        
-        n = int(self.drives[ix][0])
-                
+        n = int(self.drives[self.cycle_index][0])                
         if 0 < n:      
-            d = self.drives[ix][1]      
-            self.drives[ix][0] = (n * -1)            
-            print(f"pull_drive: level={self.level}, cycle={cycle}, index={ix}, drive={n}, date={d}")
+            d = self.drives[self.cycle_index][1]      
+            self.drives[self.cycle_index][0] = (n * -1)            
+            print(f"pull_drive: level={self.level}, cycle={cycle}, index={self.cycle_index}, drive={n}, date={d}")
             return [n, d]
         else:
+            print(f"pull_drive: level={self.level}, cycle={cycle}, index={self.cycle_index}, No drive to pull")
             return [0,0]
             
     def pull_from(self, other_level, pool, cycle):
         if self.is_used(cycle):
-            ix = self.cycle_index(cycle)
-            
-            print(f"pull_from: level={self.level}, cycle={cycle}, index={ix}")
-            
-            self.drives[ix] = other_level.pull_drive(pool, cycle)
+            print(f"pull_from: level={self.level}, cycle={cycle}, index={self.cycle_index}")            
+            self.drives[self.cycle_index] = other_level.pull_drive(pool, cycle)
                                     
     def free_drive(self, pool, cycle):
         if self.is_used(cycle):
-            ix = self.cycle_index(cycle)
-            
-            print(f"free_drive: level={self.level}, cycle={cycle}, index={ix}")
-            
-            pool.add_drive(self.drives[ix][0])
-            
-            n = int(self.drives[ix][0])
-            
-            self.drives[ix][0] = n * -1
+            self.cycle_index
+            n = int(self.drives[self.cycle_index][0])
+            if 0 < n:
+                print(f"free_drive: level={self.level}, cycle={cycle}, index={self.cycle_index}")            
+                pool.add_drive(self.drives[self.cycle_index][0])                        
+                self.drives[self.cycle_index][0] = n * -1
 
     def next_drive(self, pool, cycle):
         if self.is_used(cycle):
-            ix = self.cycle_index(cycle)
-            
-            print(f"next_drive: level={self.level}, cycle={cycle}, index={ix}")
-            
-            #self.prevs[ix] = self.drives[ix]
-
-            self.drives[ix][0] = pool.get_next_drive()
-            self.drives[ix][1] = self.cycle_date
-
-            #print("next_drive:", self.drives[ix])
+            print(f"next_drive: level={self.level}, cycle={cycle}, index={self.cycle_index}")            
+            self.drives[self.cycle_index][0] = pool.get_next_drive()
+            self.drives[self.cycle_index][1] = self.cycle_date
             
             
     def csv_data(self):
@@ -129,16 +117,16 @@ class rotation_level():
 
 dp = drive_pool()
 
-l1 = rotation_level(1, 7, 1)
-l2 = rotation_level(2, 5, 2)
-l3 = rotation_level(3, 4, 4)
+l1 = rotation_level(1, 4, 1)
+l2 = rotation_level(2, 3, 2)
+l3 = rotation_level(3, 2, 4)
 
 if False:
     l1.list_drives()
     l2.list_drives()
     l3.list_drives()
 
-n_weeks = 20
+n_weeks = 10
 
 if False:
     s = ",level-1,level-1,level-1,level-2,level-2,level-2,level-3,level-3,level-3"
@@ -155,7 +143,8 @@ if False:
 if True:
     out_list = []
     s = f"iter,date{l1.csv_head()},.{l2.csv_head()},.{l3.csv_head()},notes"
-    print(s)
+    #print(s)
+    out_list += f"{s}\n"
     
     start_date = date(2020,7,4)
     
