@@ -3,6 +3,14 @@
 from datetime import date
 from datetime import timedelta
 
+logfilename = 'bakrot_log.txt'
+
+def plog(msg):
+    with open(logfilename,  'a') as log_file:        
+        print(msg)
+        log_file.write(f"{msg}\n")
+
+
 class DrivePool():
     def __init__(self):
         self.drivepool = []
@@ -13,15 +21,15 @@ class DrivePool():
         if len(self.drivepool) == 0:
             self.lastdrive = self.lastdrive + 1
             n = self.lastdrive
-            print(f"DrivePool.get_next_drive: {n} new")
+            plog(f"DrivePool.get_next_drive: {n} new")
         else:
             n = self.drivepool.pop()
-            print(f"DrivePool.get_next_drive: {n} from pool")
+            plog(f"DrivePool.get_next_drive: {n} from pool")
         return n
             
     def add_drive(self, drive_number):
         if 0 < drive_number:
-            print(f"DrivePool.add_drive: {drive_number} added to pool")
+            plog(f"DrivePool.add_drive: {drive_number} added to pool")
             self.drivepool.append(drive_number)
 
 
@@ -45,54 +53,47 @@ class RotationLevel():
         self.prevs = [[self.drives[x][0], self.drives[x][1]] for x in range(self.num_drives)]
         self.cycle_index = (self.usage_cycle(cycle_num) % self.num_drives)           
         self.in_cycle = ((cycle_num + 1) % self.usage_interval == 0)
-        print(f"L{self.level} start_cycle {cycle_num}, date={cycle_date}, index={self.cycle_index}, in_cycle={self.in_cycle}")
+        plog(f"L{self.level} start_cycle {cycle_num}, date={cycle_date}, index={self.cycle_index}, in_cycle={self.in_cycle}")
 
         
     def list_drives(self):
         for i in range(self.num_drives):
-            print(f"level={self.level}, index={i}, drive={self.drives[i]}, previous={self.prevs[i]}")
+            plog(f"level={self.level}, index={i}, drive={self.drives[i]}, previous={self.prevs[i]}")
             
     def usage_cycle(self, cycle):
         n =  (cycle // self.usage_interval)           
         return n
             
-    #def cycle_index(self, cycle):
-    #    n =  (self.usage_cycle(cycle) % self.num_drives)           
-    #    return n
-            
-    # def is_used(self, cycle):
-    #     return ((cycle + 1) % self.usage_interval == 0)
-
     def pull_drive(self):
         n = int(self.drives[self.cycle_index][0])                
         if 0 < n:      
             d = self.drives[self.cycle_index][1]      
             self.drives[self.cycle_index][0] = (n * -1)            
-            print(f"L{self.level} pull_drive: cycle={self.cycle_num}, index={self.cycle_index}, drive={n}, date={d}")
+            plog(f"L{self.level} pull_drive: cycle={self.cycle_num}, index={self.cycle_index}, drive={n}, date={d}")
             return [n, d]
         else:
             if not self.next_level_down is None:
                 return self.next_level_down.pull_drive()
             else:
-                print(f"L{self.level} pull_drive: cycle={self.cycle_num}, index={self.cycle_index}, No drive to pull")
+                plog(f"L{self.level} pull_drive: cycle={self.cycle_num}, index={self.cycle_index}, No drive to pull")
                 return [0,0]
             
     def pull_from_lower_level(self):
         if self.in_cycle:
-            print(f"L{self.level} pull_from:  cycle={self.cycle_num}, index={self.cycle_index}")            
+            plog(f"L{self.level} pull_from:  cycle={self.cycle_num}, index={self.cycle_index}")            
             self.drives[self.cycle_index] = self.next_level_down.pull_drive()
                                     
     def free_drive(self):
         if self.in_cycle:
             n = int(self.drives[self.cycle_index][0])
             if 0 < n:
-                print(f"L{self.level} free_drive: cycle={self.cycle_num}, index={self.cycle_index}")            
+                plog(f"L{self.level} free_drive: cycle={self.cycle_num}, index={self.cycle_index}")            
                 self.drive_pool.add_drive(self.drives[self.cycle_index][0])                        
                 self.drives[self.cycle_index][0] = n * -1
 
     def next_drive(self):
         if self.in_cycle:
-            print(f"L{self.level} next_drive: cycle={self.cycle_num}, index={self.cycle_index}")            
+            plog(f"L{self.level} next_drive: cycle={self.cycle_num}, index={self.cycle_index}")            
             self.drives[self.cycle_index][0] = self.drive_pool.get_next_drive()
             self.drives[self.cycle_index][1] = self.cycle_date
             
@@ -139,9 +140,9 @@ if False:
 
 if False:
     s = ",level-1,level-1,level-1,level-2,level-2,level-2,level-3,level-3,level-3"
-    print(s)
+    plog(s)
     s = "i,usage_cycle,cycle_index,is_used,usage_cycle,cycle_index,is_used,usage_cycle,cycle_index,is_used"
-    print(s)
+    plog(s)
     
     for w in range(n_weeks):
         d = start_date + timedelta(weeks=w)
@@ -151,7 +152,7 @@ if False:
         s = f"{w},{l1.cycle_num},{l1.cycle_index},{l1.in_cycle:1}"
         s += f",{l2.cycle_num},{l2.cycle_index},{l2.in_cycle:1}"
         s += f",{l3.cycle_num},{l3.cycle_index},{l3.in_cycle:1}"
-        print(s)
+        plog(s)
 
 
 if True:
