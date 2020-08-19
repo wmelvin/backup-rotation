@@ -6,6 +6,7 @@ from datetime import datetime
 from datetime import date
 from datetime import timedelta
 import string
+from copy import copy
 
 
 logfilename = 'bakrot_log.txt'
@@ -95,6 +96,12 @@ class DriveSlot():
     def mark_free(self):
         self.drive_num *= -1
 
+    def drive_alabel(self):
+        if 0 < self.drive_num:
+            return to_alpha_label(self.drive_num)
+        return ''
+
+
 
 
 class RotationLevel():
@@ -123,8 +130,7 @@ class RotationLevel():
         #self.prevs = [[self.drives[x][0], self.drives[x][1]] for x in range(self.num_drives)]
         #self.prevs = [DriveSlot(self.drives[x].drive_num, self.drives[x].backup_date) for x in range(self.num_drives)]
         #self.prevs = [DriveSlot(self.drives[x]) for x in range(self.num_drives)]
-        for x in range(self.num_drives):
-            self.prevs[x] = copy(self.drives[x])
+        self.prevs = [copy(self.drives[x]) for x in range(self.num_drives)]
         
         self.cycle_index = (self.usage_cycle(cycle_num) % self.num_drives)           
         self.in_cycle = ((cycle_num + 1) % self.usage_interval == 0)
@@ -186,17 +192,17 @@ class RotationLevel():
             self.drives[self.cycle_index].drive_num = self.drive_pool.get_next_drive()
             self.drives[self.cycle_index].backup_date = self.cycle_date            
             
-    def csv_data(self):
-        s = ''
-        for i in range(self.num_drives):
-            #s +=  f",\"{str(self.drives[i][0])} ({self.drives[i][1]})\""
-            s +=  f",\"{str(self.drives[i].drive_num)} ({self.drives[i].backup_date})\""
-        return s
-        
     def csv_head(self):
         s = ''
         for i in range(self.num_drives):
             s += f",L{self.level}-D{i}"
+        return s
+        
+    def csv_data(self):
+        s = ''
+        for i in range(self.num_drives):
+            #s +=  f",\"{str(self.drives[i][0])} ({self.drives[i][1]})\""
+            s +=  f",\"{self.drives[i].drive_alabel()} ({self.drives[i].backup_date})\""
         return s
         
     def csv_diff(self):
@@ -205,7 +211,7 @@ class RotationLevel():
             s += ","
             if self.drives[i] != self.prevs[i]:
                 #s +=  f"\"{str(self.drives[i][0])} ({self.drives[i][1]})\""
-                s +=  f"\"{str(self.drives[i].drive_num)} ({self.drives[i].backup_date})\""
+                s +=  f"\"{self.drives[i].drive_alabel()} ({self.drives[i].backup_date})\""
 
         return s
 
