@@ -37,6 +37,52 @@ class DrivePool():
             self.drivepool.append(drive_number)
 
 
+# class DriveSlot():
+#     def __init__(self, drive_num=0, backup_date=0):
+#         self.__drive_num = drive_num
+#         self.__backup_date = backup_date
+
+#     @property
+#     def drive_num(self):
+#         return self.__drive_num
+    
+#     @drive_num.setter
+#     def drive_num(self, drive_num):
+#         __drive_num = drive_num
+
+#     @property
+#     def backup_date(self):
+#         return self.__backup_date
+    
+#     @backup_date.setter
+#     def backup_date(self, backup_date):
+#         __backup_date = backup_date
+
+#     def mark_free(self):
+#         self.__drive_num *= -1
+
+class DriveSlot():
+    def __init__(self, drive_num=0, backup_date=0):
+        self.drive_num = drive_num
+        self.backup_date = backup_date
+
+    def __repr__(self):
+        return f"drive={self.drive_num}, date={self.backup_date:m%/d%/y%}"
+
+    def __eq__(self, other) -> bool:
+        if type(self) != type(other):
+            return False
+        else:
+            return (
+                self.drive_num == other.drive_num
+                and self.backup_date == other.backup_date
+            )
+
+    def mark_free(self):
+        self.drive_num *= -1
+
+
+
 class RotationLevel():
     def __init__(self, level, num_drives, usage_interval, drive_pool, rotation_level_below):
         self.level = level
@@ -47,14 +93,23 @@ class RotationLevel():
         self.cycle_num = -1
         self.cycle_date = -1
         self.cycle_index = -1
-        self.drives = [[0,0] for x in range(num_drives)]
-        self.prevs =  [[0,0] for x in range(num_drives)]
+        
+        #self.drives = [[0,0] for x in range(num_drives)]
+        self.drives = [DriveSlot() for x in range(num_drives)]
+
+        #self.prevs =  [[0,0] for x in range(num_drives)]
+        self.prevs =  [DriveSlot() for x in range(num_drives)]
+
         self.in_cycle = False
         
     def start_cycle(self, cycle_num, cycle_date):
         self.cycle_num = cycle_num
         self.cycle_date = cycle_date
-        self.prevs = [[self.drives[x][0], self.drives[x][1]] for x in range(self.num_drives)]
+        
+        #self.prevs = [[self.drives[x][0], self.drives[x][1]] for x in range(self.num_drives)]
+        #self.prevs = [DriveSlot(self.drives[x].drive_num, self.drives[x].backup_date) for x in range(self.num_drives)]
+        self.prevs = [DriveSlot(self.drives[x]) for x in range(self.num_drives)]
+        
         self.cycle_index = (self.usage_cycle(cycle_num) % self.num_drives)           
         self.in_cycle = ((cycle_num + 1) % self.usage_interval == 0)
         plog(f"L{self.level} start_cycle {cycle_num}, date={cycle_date}, index={self.cycle_index}, in_cycle={self.in_cycle}")
@@ -69,47 +124,57 @@ class RotationLevel():
         return n
             
     def pull_drive(self):
-        n = int(self.drives[self.cycle_index][0])                
+        #n = int(self.drives[self.cycle_index][0])                
+        n = self.drives[self.cycle_index].drive_num                
         if 0 < n:      
-            d = self.drives[self.cycle_index][1]      
-            self.drives[self.cycle_index][0] = (n * -1)            
+            # d = self.drives[self.cycle_index][1]      
+            # self.drives[self.cycle_index][0] = (n * -1)            
+            d = self.drives[self.cycle_index].backup_date      
+            self.drives[self.cycle_index].mark_free
+
             plog(f"L{self.level} pull_drive: cycle={self.cycle_num}, index={self.cycle_index}, drive={n}, date={d}")
-            return [n, d]
+            return DriveSlot(n, d)
         else:
             if not self.level_below is None:
                 return self.level_below.pull_drive()
             else:
                 plog(f"L{self.level} pull_drive: cycle={self.cycle_num}, index={self.cycle_index}, No drive to pull")
-                return [0,0]
+                return DriveSlot(0,0)
             
     def pull_from_lower_level(self):
         if self.in_cycle:
             plog(f"L{self.level} pull_from_lower_level:  cycle={self.cycle_num}, index={self.cycle_index}")            
 
             pulled = self.level_below.pull_drive()
-            if 0 < pulled[0]:
-                self.free_drive()
+            if 0 < pulled.drive_num:
+                # ???? self.free_drive()
                 self.drives[self.cycle_index] = pulled
 
 
     def free_drive(self):
         if self.in_cycle:
-            n = int(self.drives[self.cycle_index][0])
+            #n = int(self.drives[self.cycle_index][0])
+            n = int(self.drives[self.cycle_index].drive_num)
             if 0 < n:
                 plog(f"L{self.level} free_drive: cycle={self.cycle_num}, index={self.cycle_index}")            
-                self.drive_pool.add_drive(self.drives[self.cycle_index][0])                        
-                self.drives[self.cycle_index][0] = n * -1
+                # self.drive_pool.add_drive(self.drives[self.cycle_index][0])                        
+                # self.drives[self.cycle_index][0] = n * -1
+                self.drive_pool.add_drive(self.drives[self.cycle_index].drive_num)                        
+                self.drives[self.cycle_index].mark_free
 
     def next_drive(self):
         if self.in_cycle:
             plog(f"L{self.level} next_drive: cycle={self.cycle_num}, index={self.cycle_index}")            
-            self.drives[self.cycle_index][0] = self.drive_pool.get_next_drive()
-            self.drives[self.cycle_index][1] = self.cycle_date            
+            # self.drives[self.cycle_index][0] = self.drive_pool.get_next_drive()
+            # self.drives[self.cycle_index][1] = self.cycle_date            
+            self.drives[self.cycle_index].drive_num = self.drive_pool.get_next_drive()
+            self.drives[self.cycle_index].backup_date = self.cycle_date            
             
     def csv_data(self):
         s = ''
         for i in range(self.num_drives):
-            s +=  f",\"{str(self.drives[i][0])} ({self.drives[i][1]})\""
+            #s +=  f",\"{str(self.drives[i][0])} ({self.drives[i][1]})\""
+            s +=  f",\"{str(self.drives[i].drive_num)} ({self.drives[i].backup_date})\""
         return s
         
     def csv_head(self):
@@ -123,7 +188,9 @@ class RotationLevel():
         for i in range(self.num_drives):
             s += ","
             if self.drives[i] != self.prevs[i]:
-              s +=  f"\"{str(self.drives[i][0])} ({self.drives[i][1]})\""
+                #s +=  f"\"{str(self.drives[i][0])} ({self.drives[i][1]})\""
+                s +=  f"\"{str(self.drives[i].drive_num)} ({self.drives[i].backup_date})\""
+
         return s
 
     def get_drives_in_use(self):
@@ -132,7 +199,8 @@ class RotationLevel():
         drives_list = []
 
         for x in range(self.num_drives):
-            if 0 < self.drives[x][0]:
+            #if 0 < self.drives[x][0]:
+            if 0 < self.drives[x].drive_num:
                 
                 #drives_list.append(self.drives[x])
                 tmp = self.drives[x]
@@ -146,7 +214,7 @@ class RotationLevel():
         
         #drives_list.sort(key=lambda drive: drive[0])
         
-        return sorted(drives_list)
+        return sorted(drives_list, key=lambda item: item.drive_num)
 
 
 
