@@ -5,9 +5,23 @@
 from datetime import datetime
 from datetime import date
 from datetime import timedelta
+import string
 
 
 logfilename = 'bakrot_log.txt'
+
+
+def to_alpha_label(n):
+    # Convert a number to an Excel-style base-26 alphabet label.
+    a = []
+    while n > 0:
+        q, r = divmod(n, 26)
+        if r == 0:
+            q = q - 1
+            r = 26
+        n = q
+        a.append(string.ascii_uppercase[r-1])
+    return ''.join(reversed(a))
 
 
 def plog(msg):
@@ -108,7 +122,9 @@ class RotationLevel():
         
         #self.prevs = [[self.drives[x][0], self.drives[x][1]] for x in range(self.num_drives)]
         #self.prevs = [DriveSlot(self.drives[x].drive_num, self.drives[x].backup_date) for x in range(self.num_drives)]
-        self.prevs = [DriveSlot(self.drives[x]) for x in range(self.num_drives)]
+        #self.prevs = [DriveSlot(self.drives[x]) for x in range(self.num_drives)]
+        for x in range(self.num_drives):
+            self.prevs[x] = copy(self.drives[x])
         
         self.cycle_index = (self.usage_cycle(cycle_num) % self.num_drives)           
         self.in_cycle = ((cycle_num + 1) % self.usage_interval == 0)
@@ -147,7 +163,7 @@ class RotationLevel():
 
             pulled = self.level_below.pull_drive()
             if 0 < pulled.drive_num:
-                # ???? self.free_drive()
+                self.free_drive()
                 self.drives[self.cycle_index] = pulled
 
 
@@ -203,7 +219,7 @@ class RotationLevel():
             if 0 < self.drives[x].drive_num:
                 
                 #drives_list.append(self.drives[x])
-                tmp = (self.drives[x].backup_date.strftime('%Y-%m-%d'), self.drives[x].drive_num)
+                tmp = (self.drives[x].backup_date.strftime('%Y-%m-%d'), to_alpha_label(self.drives[x].drive_num))
                 drives_list.append(tmp)
 
         if not self.level_below is None:
@@ -225,7 +241,7 @@ class RotationLevel():
 
 start_date = date(2020,7,4)
 #n_weeks = 104
-n_weeks = 20
+n_weeks = 52
 
 dp = DrivePool()
 
@@ -306,7 +322,8 @@ if True:
     with open('bakrot_output_cycles.csv', 'w') as out_file:
         for cycle in all_cycles:
             for item in cycle:
-                out_file.write(f"\"{item}\"")
+                out_file.write(f"\"{item}\",")
+            out_file.write(f"\n")
 
 
 if False:
