@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# 2020-08-17 
+# 2020-08-19 
 
 from datetime import datetime
 from datetime import date
@@ -52,30 +52,6 @@ class DrivePool():
             self.drivepool.append(drive_number)
 
 
-# class DriveSlot():
-#     def __init__(self, drive_num=0, backup_date=0):
-#         self.__drive_num = drive_num
-#         self.__backup_date = backup_date
-
-#     @property
-#     def drive_num(self):
-#         return self.__drive_num
-    
-#     @drive_num.setter
-#     def drive_num(self, drive_num):
-#         __drive_num = drive_num
-
-#     @property
-#     def backup_date(self):
-#         return self.__backup_date
-    
-#     @backup_date.setter
-#     def backup_date(self, backup_date):
-#         __backup_date = backup_date
-
-#     def mark_free(self):
-#         self.__drive_num *= -1
-
 class DriveSlot():
     def __init__(self, drive_num=0, backup_date=0):
         self.drive_num = drive_num
@@ -96,7 +72,7 @@ class DriveSlot():
     def mark_free(self):
         self.drive_num *= -1
 
-    def drive_alabel(self):
+    def alabel(self):
         if 0 < self.drive_num:
             return to_alpha_label(self.drive_num)
         return ''
@@ -114,22 +90,14 @@ class RotationLevel():
         self.cycle_num = -1
         self.cycle_date = -1
         self.cycle_index = -1
-        
-        #self.drives = [[0,0] for x in range(num_drives)]
-        self.drives = [DriveSlot() for x in range(num_drives)]
-
-        #self.prevs =  [[0,0] for x in range(num_drives)]
-        self.prevs =  [DriveSlot() for x in range(num_drives)]
-
         self.in_cycle = False
+        self.drives = [DriveSlot() for x in range(num_drives)]
+        self.prevs =  [DriveSlot() for x in range(num_drives)]
         
     def start_cycle(self, cycle_num, cycle_date):
         self.cycle_num = cycle_num
         self.cycle_date = cycle_date
-        
-        #self.prevs = [[self.drives[x][0], self.drives[x][1]] for x in range(self.num_drives)]
-        #self.prevs = [DriveSlot(self.drives[x].drive_num, self.drives[x].backup_date) for x in range(self.num_drives)]
-        #self.prevs = [DriveSlot(self.drives[x]) for x in range(self.num_drives)]
+
         self.prevs = [copy(self.drives[x]) for x in range(self.num_drives)]
         
         self.cycle_index = (self.usage_cycle(cycle_num) % self.num_drives)           
@@ -146,11 +114,8 @@ class RotationLevel():
         return n
             
     def pull_drive(self):
-        #n = int(self.drives[self.cycle_index][0])                
         n = self.drives[self.cycle_index].drive_num                
         if 0 < n:      
-            # d = self.drives[self.cycle_index][1]      
-            # self.drives[self.cycle_index][0] = (n * -1)            
             d = self.drives[self.cycle_index].backup_date      
             self.drives[self.cycle_index].mark_free
 
@@ -175,20 +140,15 @@ class RotationLevel():
 
     def free_drive(self):
         if self.in_cycle:
-            #n = int(self.drives[self.cycle_index][0])
             n = int(self.drives[self.cycle_index].drive_num)
             if 0 < n:
                 plog(f"L{self.level} free_drive: cycle={self.cycle_num}, index={self.cycle_index}")            
-                # self.drive_pool.add_drive(self.drives[self.cycle_index][0])                        
-                # self.drives[self.cycle_index][0] = n * -1
                 self.drive_pool.add_drive(self.drives[self.cycle_index].drive_num)                        
                 self.drives[self.cycle_index].mark_free
 
     def next_drive(self):
         if self.in_cycle:
             plog(f"L{self.level} next_drive: cycle={self.cycle_num}, index={self.cycle_index}")            
-            # self.drives[self.cycle_index][0] = self.drive_pool.get_next_drive()
-            # self.drives[self.cycle_index][1] = self.cycle_date            
             self.drives[self.cycle_index].drive_num = self.drive_pool.get_next_drive()
             self.drives[self.cycle_index].backup_date = self.cycle_date            
             
@@ -201,7 +161,6 @@ class RotationLevel():
     def csv_data(self):
         s = ''
         for i in range(self.num_drives):
-            #s +=  f",\"{str(self.drives[i][0])} ({self.drives[i][1]})\""
             s +=  f",\"{self.drives[i].drive_alabel()} ({self.drives[i].backup_date})\""
         return s
         
@@ -210,34 +169,22 @@ class RotationLevel():
         for i in range(self.num_drives):
             s += ","
             if self.drives[i] != self.prevs[i]:
-                #s +=  f"\"{str(self.drives[i][0])} ({self.drives[i][1]})\""
                 s +=  f"\"{self.drives[i].drive_alabel()} ({self.drives[i].backup_date})\""
 
         return s
 
     def get_drives_in_use(self):
-        #drives_list = [[x[0], x[1]] for x in self.drives if 0 < x[0]]
-
         drives_list = []
-
         for x in range(self.num_drives):
-            #if 0 < self.drives[x][0]:
             if 0 < self.drives[x].drive_num:
-                
-                #drives_list.append(self.drives[x])
-                tmp = (self.drives[x].backup_date.strftime('%Y-%m-%d'), to_alpha_label(self.drives[x].drive_num))
-                drives_list.append(tmp)
+                t = (self.drives[x].backup_date.strftime('%Y-%m-%d'), to_alpha_label(self.drives[x].drive_num))
+                drives_list.append(t)
 
         if not self.level_below is None:
             drvs = self.level_below.get_drives_in_use()
             for x in range(len(drvs)):
                 drives_list.append(drvs[x])
-            #drives_list.append(self.level_below.get_drives_in_use())
-        
-        #drives_list.sort(key=lambda drive: drive[0])
-        
-        #return sorted(drives_list, key=lambda item: item.drive_num)
-        #return sorted(drives_list, key=lambda item: item.backup_date)
+
         return sorted(drives_list)
 
 
@@ -315,9 +262,6 @@ if True:
 
         s = f"{week_num},{week_date}{l1.csv_diff()},{l2.csv_diff()},{l3.csv_diff()}"
         out_list += f"{s}\n"
-
-    #for x in range(len(all_cycles)):
-    #    print(all_cycles[x])
 
     with open('bakrot_output.csv', 'w') as out_file:
         out_file.writelines(out_list)
