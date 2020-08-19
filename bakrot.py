@@ -67,7 +67,7 @@ class DriveSlot():
         self.backup_date = backup_date
 
     def __repr__(self):
-        return f"drive={self.drive_num}, date={self.backup_date:m%/d%/y%}"
+        return f"({self.drive_num}, {self.backup_date})"
 
     def __eq__(self, other) -> bool:
         if type(self) != type(other):
@@ -203,7 +203,7 @@ class RotationLevel():
             if 0 < self.drives[x].drive_num:
                 
                 #drives_list.append(self.drives[x])
-                tmp = self.drives[x]
+                tmp = (self.drives[x].backup_date.strftime('%Y-%m-%d'), self.drives[x].drive_num)
                 drives_list.append(tmp)
 
         if not self.level_below is None:
@@ -214,7 +214,9 @@ class RotationLevel():
         
         #drives_list.sort(key=lambda drive: drive[0])
         
-        return sorted(drives_list, key=lambda item: item.drive_num)
+        #return sorted(drives_list, key=lambda item: item.drive_num)
+        #return sorted(drives_list, key=lambda item: item.backup_date)
+        return sorted(drives_list)
 
 
 
@@ -292,14 +294,19 @@ if True:
         s = f"{week_num},{week_date}{l1.csv_diff()},{l2.csv_diff()},{l3.csv_diff()}"
         out_list += f"{s}\n"
 
-    for x in range(len(all_cycles)):
-        print(all_cycles[x])
+    #for x in range(len(all_cycles)):
+    #    print(all_cycles[x])
 
     with open('bakrot_output.csv', 'w') as out_file:
         out_file.writelines(out_list)
 
     with open('bakrot_output_data.csv', 'w') as out_file:
         out_file.writelines(out_list2)
+
+    with open('bakrot_output_cycles.csv', 'w') as out_file:
+        for cycle in all_cycles:
+            for item in cycle:
+                out_file.write(f"\"{item}\"")
 
 
 if False:
