@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
-# 2020-08-19 
+# 2020-08-21 
 
 from datetime import datetime
 from datetime import date
 from datetime import timedelta
 import string
-from copy import copy
 
 
 logfilename = 'bakrot_log.txt'
@@ -25,8 +24,17 @@ def to_alpha_label(n):
     return ''.join(reversed(a))
 
 
+def get_drv_num(drive_tuple):
+    return drive_tuple[0]
+
+
+def get_drv_date(drive_tuple):
+    return drive_tuple[1]
+    
+
 def plog(msg):
-    with open(logfilename,  'a') as log_file:        
+    # Print and log.
+    with open(logfilename,  'a') as log_file:
         print(msg)
         log_file.write(f"[{datetime.now():%Y%m%d_%H%M%S}] {msg}\n")
 
@@ -45,39 +53,11 @@ class DrivePool():
             n = self.drivepool.pop()
             plog(f"DrivePool.get_next_drive: {n} from pool")
         return n
-            
+
     def add_drive(self, drive_number):
         if 0 < drive_number:
             plog(f"DrivePool.add_drive: {drive_number} added to pool")
             self.drivepool.append(drive_number)
-
-
-class DriveSlot():
-    def __init__(self, drive_num=0, backup_date=0):
-        self.drive_num = drive_num
-        self.backup_date = backup_date
-
-    def __repr__(self):
-        return f"({self.drive_num}, {self.backup_date})"
-
-    def __eq__(self, other) -> bool:
-        if type(self) != type(other):
-            return False
-        else:
-            return (
-                self.drive_num == other.drive_num
-                and self.backup_date == other.backup_date
-            )
-
-    def mark_free(self):
-        self.drive_num *= -1
-
-    def alabel(self):
-        if 0 < self.drive_num:
-            return to_alpha_label(self.drive_num)
-        return ''
-
-
 
 
 class RotationLevel():
@@ -91,100 +71,101 @@ class RotationLevel():
         self.cycle_date = -1
         self.cycle_index = -1
         self.in_cycle = False
-        self.drives = [DriveSlot() for x in range(num_drives)]
-        self.prevs =  [DriveSlot() for x in range(num_drives)]
-        
+        self.drives = [(0, 0) for x in range(num_drives)]
+        self.prevs =  [(0, 0) for x in range(num_drives)]
+
     def start_cycle(self, cycle_num, cycle_date):
         self.cycle_num = cycle_num
         self.cycle_date = cycle_date
-
-        self.prevs = [copy(self.drives[x]) for x in range(self.num_drives)]
-        
-        self.cycle_index = (self.usage_cycle(cycle_num) % self.num_drives)           
+        self.prevs = [self.drives[x] for x in range(self.num_drives)]
+        self.cycle_index = (self.usage_cycle(cycle_num) % self.num_drives)
         self.in_cycle = ((cycle_num + 1) % self.usage_interval == 0)
         plog(f"L{self.level} start_cycle {cycle_num}, date={cycle_date}, index={self.cycle_index}, in_cycle={self.in_cycle}")
 
-        
     def list_drives(self):
+        plog(f"L{self.level} list_drives:")
         for i in range(self.num_drives):
-            plog(f"level={self.level}, index={i}, drive={self.drives[i]}, previous={self.prevs[i]}")
-            
+            plog(f"  index={i}, drive={self.drives[i]}, previous={self.prevs[i]}")
+
     def usage_cycle(self, cycle):
-        n =  (cycle // self.usage_interval)           
+        n =  (cycle // self.usage_interval)
         return n
-            
+
+    def drv_num(self, index):
+        return get_drv_num(self.drives[index])
+
+    def drv_date(self, index):
+        return get_drv_date(self.drives[index])
+
+    def mark_free(self, index):
+        self.drives[index] = (self.drives[index][0] * -1, self.drives[index][1])
+
     def pull_drive(self):
-        n = self.drives[self.cycle_index].drive_num                
-        if 0 < n:      
-            d = self.drives[self.cycle_index].backup_date      
-            self.drives[self.cycle_index].mark_free
+        n = self.drv_num(self.cycle_index)
+        if 0 < n:
+            d = self.drv_date(self.cycle_index)
+            self.mark_free(self.cycle_index)
 
             plog(f"L{self.level} pull_drive: cycle={self.cycle_num}, index={self.cycle_index}, drive={n}, date={d}")
-            return DriveSlot(n, d)
+            return (n, d)
         else:
             if not self.level_below is None:
                 return self.level_below.pull_drive()
             else:
                 plog(f"L{self.level} pull_drive: cycle={self.cycle_num}, index={self.cycle_index}, No drive to pull")
-                return DriveSlot(0,0)
-            
+                return (0, 0)
+
     def pull_from_lower_level(self):
         if self.in_cycle:
-            plog(f"L{self.level} pull_from_lower_level:  cycle={self.cycle_num}, index={self.cycle_index}")            
-
+            plog(f"L{self.level} pull_from_lower_level:  cycle={self.cycle_num}, index={self.cycle_index}")
             pulled = self.level_below.pull_drive()
-            if 0 < pulled.drive_num:
+            if 0 < get_drv_num(pulled):
                 self.free_drive()
                 self.drives[self.cycle_index] = pulled
 
-
     def free_drive(self):
         if self.in_cycle:
-            n = int(self.drives[self.cycle_index].drive_num)
+            n = self.drv_num(self.cycle_index)
             if 0 < n:
-                plog(f"L{self.level} free_drive: cycle={self.cycle_num}, index={self.cycle_index}")            
-                self.drive_pool.add_drive(self.drives[self.cycle_index].drive_num)                        
-                self.drives[self.cycle_index].mark_free
+                plog(f"L{self.level} free_drive: cycle={self.cycle_num}, index={self.cycle_index}")
+                self.drive_pool.add_drive(n)
+                self.mark_free(self.cycle_index)
 
     def next_drive(self):
         if self.in_cycle:
-            plog(f"L{self.level} next_drive: cycle={self.cycle_num}, index={self.cycle_index}")            
-            self.drives[self.cycle_index].drive_num = self.drive_pool.get_next_drive()
-            self.drives[self.cycle_index].backup_date = self.cycle_date            
-            
+            plog(f"L{self.level} next_drive: cycle={self.cycle_num}, index={self.cycle_index}")
+            self.drives[self.cycle_index] = (self.drive_pool.get_next_drive(), self.cycle_date)
+
     def csv_head(self):
         s = ''
         for i in range(self.num_drives):
             s += f",L{self.level}-D{i}"
         return s
-        
+
     def csv_data(self):
         s = ''
         for i in range(self.num_drives):
-            s +=  f",\"{self.drives[i].drive_alabel()} ({self.drives[i].backup_date})\""
+            s +=  f",\"{to_alpha_label(self.drv_num(i))} ({self.drv_date(i)})\""
         return s
-        
+
     def csv_diff(self):
         s = ''
         for i in range(self.num_drives):
             s += ","
             if self.drives[i] != self.prevs[i]:
-                s +=  f"\"{self.drives[i].drive_alabel()} ({self.drives[i].backup_date})\""
-
+                s +=  f"\"{to_alpha_label(self.drv_num(i))} ({self.drv_date(i)})\""
         return s
 
     def get_drives_in_use(self):
         drives_list = []
         for x in range(self.num_drives):
-            if 0 < self.drives[x].drive_num:
-                t = (self.drives[x].backup_date.strftime('%Y-%m-%d'), to_alpha_label(self.drives[x].drive_num))
+            if 0 < self.drv_num(x):
+                t = (self.drv_date(x).strftime('%Y-%m-%d'), to_alpha_label(self.drv_num(x)))
                 drives_list.append(t)
-
         if not self.level_below is None:
             drvs = self.level_below.get_drives_in_use()
             for x in range(len(drvs)):
                 drives_list.append(drvs[x])
-
         return sorted(drives_list)
 
 
@@ -218,7 +199,7 @@ if False:
     plog(s)
     s = "i,usage_cycle,cycle_index,is_used,usage_cycle,cycle_index,is_used,usage_cycle,cycle_index,is_used"
     plog(s)
-    
+
     for w in range(n_weeks):
         d = start_date + timedelta(weeks=w)
         l1.start_cycle(w, d)
@@ -236,27 +217,27 @@ if True:
     s = f"iter,date{l1.csv_head()},.{l2.csv_head()},.{l3.csv_head()},notes"
     out_list += f"{s}\n"
     out_list2 = out_list.copy()
-    
+
     for week_num in range(n_weeks):
         week_date = start_date + timedelta(weeks=week_num)
-        
+
         l1.start_cycle(week_num, week_date)
         l2.start_cycle(week_num, week_date)
         l3.start_cycle(week_num, week_date)
-        
-        l3.pull_from_lower_level()        
+
+        l3.pull_from_lower_level()
 
         l2.pull_from_lower_level()
-        
+
         l1.free_drive()
-        
+
         s = f"{week_num},{week_date}{l1.csv_data()},{l2.csv_data()},{l3.csv_data()},before next drive"
         out_list2 += f"{s}\n"
-        
+
         l1.next_drive()
 
         all_cycles.append(l3.get_drives_in_use())
-        
+
         s = f"{week_num},{week_date}{l1.csv_data()},{l2.csv_data()},{l3.csv_data()},after next drive"
         out_list2 += f"{s}\n"
 
