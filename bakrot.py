@@ -160,7 +160,8 @@ class RotationLevel():
         drives_list = []
         for x in range(self.num_drives):
             if 0 < self.drv_num(x):
-                t = (self.drv_date(x).strftime('%Y-%m-%d'), to_alpha_label(self.drv_num(x)))
+                #t = (self.drv_date(x).strftime('%Y-%m-%d'), to_alpha_label(self.drv_num(x)))
+                t = (self.drv_date(x), self.drv_num(x))
                 drives_list.append(t)
         if not self.level_below is None:
             drvs = self.level_below.get_drives_in_use()
@@ -174,8 +175,8 @@ class RotationLevel():
 # Main script:
 
 start_date = date(2020,7,4)
-#n_weeks = 104
-n_weeks = 52
+n_weeks = 25
+
 
 dp = DrivePool()
 
@@ -183,9 +184,9 @@ l1 = RotationLevel(1, 5, 1, dp, None)
 l2 = RotationLevel(2, 3, 2, dp, l1)
 l3 = RotationLevel(3, 2, 4, dp, l2)
 
-#l1 = RotationLevel(1, 7, 1, dp, None)
-#l2 = RotationLevel(2, 8, 2, dp, l1)
-#l3 = RotationLevel(3, 6, 4, dp, l2)
+# l1 = RotationLevel(1, 7, 1, dp, None)
+# l2 = RotationLevel(2, 8, 2, dp, l1)
+# l3 = RotationLevel(3, 6, 4, dp, l2)
 
 
 if False:
@@ -250,11 +251,51 @@ if True:
     with open('bakrot_output_data.csv', 'w') as out_file:
         out_file.writelines(out_list2)
 
+    all_dates = []
+    for cycle in all_cycles:
+        for item in cycle:
+            item_date = item[0].strftime('%Y-%m-%d')
+            if not item_date in all_dates:
+                all_dates.append(item_date)
+
+    all_dates.sort()
+
     with open('bakrot_output_cycles.csv', 'w') as out_file:
-        for cycle in all_cycles:
-            for item in cycle:
-                out_file.write(f"\"{item}\",")
-            out_file.write(f"\n")
+        for d in all_dates:
+            s = d
+            for cycle in all_cycles:
+                item_drive = ','
+                for item in cycle:
+                    item_date = item[0].strftime('%Y-%m-%d')
+                    if item_date == d:
+                        item_drive = to_alpha_label(item[1])
+                s += item_drive        
+            out_file.write(f"{s}\n")
+
+
+    # for cycle in all_cycles:
+    #     for date_item in all_dates:
+    #         for cycle_item in cycle:
+    #             if cycle_item[0] == date_item[0]:
+    #                 date_item[1] += f",\"{to_alpha_label(cycle_item[1])}\""
+    #             else:
+    #                 date_item[1] += ","
+
+    # with open('bakrot_output_cycles.csv', 'w') as out_file:
+    #     for date_item in all_dates:
+    #         date_str = date_item[0].strftime('%Y-%m-%d')
+    #         drives_str = date_item[1]
+    #         out_file.write(f"\"{date_str}\"{drives_str}\n")
+
+
+
+
+    # with open('bakrot_output_cycles.csv', 'w') as out_file:
+    #     for cycle in all_cycles:
+    #         for item in cycle:
+    #             #out_file.write(f"\"{item}\",")
+    #             out_file.write(f"\"{item[0].strftime('%Y-%m-%d')} {to_alpha_label(item[1])}\",")
+    #         out_file.write(f"\n")
 
 
 if False:
