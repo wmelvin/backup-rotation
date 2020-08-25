@@ -67,17 +67,30 @@ class RotationLevel():
         self.cycle_num = -1
         self.cycle_date = -1
         self.cycle_index = -1
+        self.last_index = -1
         self.in_cycle = False
         self.drives = [DriveSlot(0, 0, 0) for x in range(num_drives)]
-        self.prevs =  [DriveSlot(0, 0, 0) for x in range(num_drives)]
+        self.prevs =  [DriveSlot(0, 0, 0) for x in range(num_drives)]        
 
     def start_cycle(self, cycle_num, cycle_date):
         self.cycle_num = cycle_num
         self.cycle_date = cycle_date
-        self.prevs = [self.drives[x] for x in range(self.num_drives)]
-        self.cycle_index = (self.usage_cycle(cycle_num) % self.num_drives)
         self.in_cycle = ((cycle_num + 1) % self.usage_interval == 0)
+        
+        #self.cycle_index = (self.usage_cycle(cycle_num) % self.num_drives)
+        self.cycle_index = self.last_index + 1
+        if self.cycle_index == self.num_drives:
+            self.cycle_index = 0
+        
+        self.prevs = [self.drives[x] for x in range(self.num_drives)]
+
         plog(f"L{self.level} start_cycle {cycle_num}, date={cycle_date}, index={self.cycle_index}, in_cycle={self.in_cycle}")
+
+    # def is_full(self):
+    #     for ds in self.drives:
+    #         if ds.slot_num <= 0:
+    #             return False
+    #     return True
 
     def list_drives(self):
         plog(f"L{self.level} list_drives:")
@@ -85,14 +98,18 @@ class RotationLevel():
             plog(f"  index={i}, drive={self.drives[i]}, previous={self.prevs[i]}")
 
     def usage_cycle(self, cycle):
-        n =  (cycle // self.usage_interval)
+        n =  ((cycle + 1) // self.usage_interval)
         return n
 
     def mark_free(self, index):
         ds = self.drives[index]
         self.drives[index] = DriveSlot(ds.slot_num * -1, ds.use_count, ds.backup_date)
 
+
     def pull_drive(self):
+        # if not self.is_full:
+        #     return DriveSlot(0, 0, 0)
+
         ds = self.drives[self.cycle_index]
         if 0 < ds.slot_num:
             self.mark_free(self.cycle_index)
@@ -105,6 +122,7 @@ class RotationLevel():
             else:
                 plog(f"L{self.level} pull_drive: cycle={self.cycle_num}, index={self.cycle_index}, No drive to pull")
                 return DriveSlot(0, 0, 0)
+
 
     def pull_from_lower_level(self):
         if self.in_cycle:
@@ -127,6 +145,7 @@ class RotationLevel():
             plog(f"L{self.level} next_drive: cycle={self.cycle_num}, index={self.cycle_index}")
             ds = self.drive_pool.get_next_drive()
             self.drives[self.cycle_index] = DriveSlot(ds.slot_num, ds.use_count + 1, self.cycle_date)
+            self.last_index = self.cycle_index
 
     def csv_head(self):
         s = ''
@@ -153,7 +172,7 @@ class RotationLevel():
         for x in range(self.num_drives):
             if 0 < self.drives[x].slot_num:
                 #t = (self.drv_date(x).strftime('%Y-%m-%d'), to_alpha_label(self.drv_num(x)))
-                t = (self.drives[x].backup_date, self.drives[x].slot_num)
+                t = (self.drives[x].backup_date, self.drives[x].slot_num, self.drives[x].use_count, self.level)
                 drives_list.append(t)
         if not self.level_below is None:
             drvs = self.level_below.get_drives_in_use()
@@ -167,18 +186,18 @@ class RotationLevel():
 # Main script:
 
 start_date = date(2020,7,4)
-n_weeks = 104
+n_weeks = 12
 
 
 dp = DrivePool()
 
-# l1 = RotationLevel(1, 5, 1, dp, None)
-# l2 = RotationLevel(2, 3, 2, dp, l1)
-# l3 = RotationLevel(3, 2, 4, dp, l2)
+l1 = RotationLevel(1, 2, 1, dp, None)
+l2 = RotationLevel(2, 2, 2, dp, l1)
+l3 = RotationLevel(3, 2, 4, dp, l2)
 
-l1 = RotationLevel(1, 7, 1, dp, None)
-l2 = RotationLevel(2, 8, 2, dp, l1)
-l3 = RotationLevel(3, 6, 4, dp, l2)
+# l1 = RotationLevel(1, 7, 1, dp, None)
+# l2 = RotationLevel(2, 8, 2, dp, l1)
+# l3 = RotationLevel(3, 6, 4, dp, l2)
 
 
 if False:
@@ -256,13 +275,14 @@ if True:
         for d in all_dates:
             s = d
             for cycle in all_cycles:
-                item_drive = ','
+                slot = ','
                 for item in cycle:
                     item_date = item[0].strftime('%Y-%m-%d')
                     if item_date == d:
-                        item_drive = f",\"{to_alpha_label(item[1])}\""
+                        slot = to_alpha_label(item[1])
+                        slot = f",\"{slot} U{item[2]} L{item[3]}\""
                         break
-                s += item_drive        
+                s += slot
             out_file.write(f"{s}\n")
 
 
