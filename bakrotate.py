@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
+# 2020-08-26 
+
+
 import collections
 import string
 
 
-__all__ = ["to_alpha_label", "DriveSlot", "DrivePool", "RotationLevel"]
+#__all__ = ["to_alpha_label", "DriveSlot", "DrivePool", "RotationLevel"]
 
 
 def to_alpha_label(n):
@@ -147,7 +150,10 @@ class RotationLevel():
     def csv_data(self):
         s = ''
         for i in range(self.num_drives):
-            s +=  f",\"{to_alpha_label(self.drives[i].slot_num)} ({self.drives[i].backup_date})\""
+            if self.drives[i].slot_num == 0:
+                s += ','    
+            else:
+                s +=  f",\"{to_alpha_label(self.drives[i].slot_num)} ({self.drives[i].backup_date})\""
         return s
 
     def csv_diff(self):
