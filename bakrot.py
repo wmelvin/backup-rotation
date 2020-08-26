@@ -67,7 +67,7 @@ class RotationLevel():
         self.cycle_num = -1
         self.cycle_date = -1
         self.cycle_index = -1
-        self.last_index = -1
+        #self.last_index = -1
         self.in_cycle = False
         self.drives = [DriveSlot(0, 0, 0) for x in range(num_drives)]
         self.prevs =  [DriveSlot(0, 0, 0) for x in range(num_drives)]        
@@ -77,10 +77,10 @@ class RotationLevel():
         self.cycle_date = cycle_date
         self.in_cycle = ((cycle_num + 1) % self.usage_interval == 0)
         
-        #self.cycle_index = (self.usage_cycle(cycle_num) % self.num_drives)
-        self.cycle_index = self.last_index + 1
-        if self.cycle_index == self.num_drives:
-            self.cycle_index = 0
+        self.cycle_index = (self.usage_cycle(cycle_num) % self.num_drives)
+        # self.cycle_index = self.last_index + 1
+        # if self.cycle_index == self.num_drives:
+        #     self.cycle_index = 0
         
         self.prevs = [self.drives[x] for x in range(self.num_drives)]
 
@@ -98,7 +98,8 @@ class RotationLevel():
             plog(f"  index={i}, drive={self.drives[i]}, previous={self.prevs[i]}")
 
     def usage_cycle(self, cycle):
-        n =  ((cycle + 1) // self.usage_interval)
+        #n =  ((cycle + 1) // self.usage_interval)
+        n =  (cycle // self.usage_interval)
         return n
 
     def mark_free(self, index):
@@ -145,7 +146,7 @@ class RotationLevel():
             plog(f"L{self.level} next_drive: cycle={self.cycle_num}, index={self.cycle_index}")
             ds = self.drive_pool.get_next_drive()
             self.drives[self.cycle_index] = DriveSlot(ds.slot_num, ds.use_count + 1, self.cycle_date)
-            self.last_index = self.cycle_index
+            #self.last_index = self.cycle_index
 
     def csv_head(self):
         s = ''
@@ -186,18 +187,19 @@ class RotationLevel():
 # Main script:
 
 start_date = date(2020,7,4)
-n_weeks = 12
+n_weeks = 104
 
 
 dp = DrivePool()
 
-l1 = RotationLevel(1, 2, 1, dp, None)
-l2 = RotationLevel(2, 2, 2, dp, l1)
-l3 = RotationLevel(3, 2, 4, dp, l2)
-
-# l1 = RotationLevel(1, 7, 1, dp, None)
-# l2 = RotationLevel(2, 8, 2, dp, l1)
+# l1 = RotationLevel(1, 5, 1, dp, None)
+# l2 = RotationLevel(2, 4, 2, dp, l1)
 # l3 = RotationLevel(3, 6, 4, dp, l2)
+
+l1 = RotationLevel(1, 7, 1, dp, None)
+l2 = RotationLevel(2, 4, 2, dp, l1)
+l3 = RotationLevel(3, 4, 4, dp, l2)
+l4 = RotationLevel(4, 4, 8, dp, l3)
 
 
 if False:
@@ -236,6 +238,9 @@ if True:
         l1.start_cycle(week_num, week_date)
         l2.start_cycle(week_num, week_date)
         l3.start_cycle(week_num, week_date)
+        l4.start_cycle(week_num, week_date)
+
+        l4.pull_from_lower_level()
 
         l3.pull_from_lower_level()
 
@@ -248,7 +253,7 @@ if True:
 
         l1.next_drive()
 
-        all_cycles.append(l3.get_drives_in_use())
+        all_cycles.append(l4.get_drives_in_use())
 
         s = f"{week_num},{week_date}{l1.csv_data()},{l2.csv_data()},{l3.csv_data()},after next drive"
         out_list2 += f"{s}\n"
