@@ -21,6 +21,17 @@ class Plogger():
             log_file.write(f"[{datetime.now():%Y%m%d_%H%M%S}] {msg}\n")
 
 
+def levels_info_str(prefix, levels_list, suffix, do_diff):
+    s = f"{prefix}"
+    for x in range(len(levels)):
+        if do_diff:
+            s += f"{levels_list[x].csv_diff()},"
+        else:
+            s += f"{levels_list[x].csv_data()},"
+    s += suffix
+    return s
+
+
 #----------------------------------------------------------------------
 # Main script:
 
@@ -49,9 +60,6 @@ do_run_main = True
 
 
 if dbg_list_levels:
-    # l1.list_drives()
-    # l2.list_drives()
-    # l3.list_drives()
     for x in range(len(levels)):
         levels[x].list_drives()
 
@@ -64,13 +72,6 @@ if dbg_list_cycles:
 
     for w in range(n_weeks):
         d = start_date + timedelta(weeks=w)
-        
-        # l1.start_cycle(w, d)
-        # l2.start_cycle(w, d)
-        # l3.start_cycle(w, d)
-        # s = f"{w},{l1.cycle_num},{l1.cycle_index},{l1.in_cycle:1}"
-        # s += f",{l2.cycle_num},{l2.cycle_index},{l2.in_cycle:1}"
-        # s += f",{l3.cycle_num},{l3.cycle_index},{l3.in_cycle:1}"
 
         for x in range(len(levels)):
             levels[x].start_cycle(w, d)
@@ -95,38 +96,25 @@ if do_run_main:
     for week_num in range(n_weeks):
         week_date = start_date + timedelta(weeks=week_num)
 
-        # l1.start_cycle(week_num, week_date)
-        # l2.start_cycle(week_num, week_date)
-        # l3.start_cycle(week_num, week_date)
-        # l4.start_cycle(week_num, week_date)
         for x in range(len(levels)):
             levels[x].start_cycle(week_num, week_date)
 
-        # l4.pull_from_lower_level()
-        # l3.pull_from_lower_level()
-        # l2.pull_from_lower_level()
         for x in range(len(levels)-1, 0, -1):
-            level[x].pull_from_lower_level()
+            levels[x].pull_from_lower_level()
         
         l1.free_drive()
 
-        #s = f"{week_num},{week_date}{l1.csv_data()},{l2.csv_data()},{l3.csv_data()},before next drive"
-        s = f"{week_num},{week_date}"
-        for x in range(len(levels)):
-            s += f"{levels[x].csv_data()},"
-        s += "before next drive"    
-        
+        s = levels_info_str(f"{week_num},{week_date}", levels, "before next drive", False) 
         out_list2 += f"{s}\n"
 
         l1.next_drive()
 
-        #all_cycles.append(l4.get_drives_in_use())
-        all_cycles.append(levels[-1:].get_drives_in_use())
+        all_cycles.append(levels[len(levels)-1].get_drives_in_use())
 
-        s = f"{week_num},{week_date}{l1.csv_data()},{l2.csv_data()},{l3.csv_data()},after next drive"
+        s = levels_info_str(f"{week_num},{week_date}", levels, "after next drive", False)         
         out_list2 += f"{s}\n"
 
-        s = f"{week_num},{week_date}{l1.csv_diff()},{l2.csv_diff()},{l3.csv_diff()}"
+        s = levels_info_str(f"{week_num},{week_date}", levels, "", True) 
         out_list += f"{s}\n"
 
     with open('bakrot_output.csv', 'w') as out_file:
@@ -160,8 +148,5 @@ if do_run_main:
 
 
 if dbg_list_levels:
-    # l1.list_drives()
-    # l2.list_drives()
-    # l3.list_drives()
     for x in range(len(levels)):
         levels[x].list_drives()
