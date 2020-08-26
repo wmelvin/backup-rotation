@@ -41,15 +41,22 @@ l2 = RotationLevel(2, 4, 2, dp, l1, plog)
 l3 = RotationLevel(3, 4, 4, dp, l2, plog)
 l4 = RotationLevel(4, 4, 8, dp, l3, plog)
 
-# *!* NEXT: Put levels in list.
+levels = [l1, l2, l3, l4]
 
-if False:
-    l1.list_drives()
-    l2.list_drives()
-    l3.list_drives()
+dbg_list_levels = False
+dbg_list_cycles = False
+do_run_main = True
 
 
-if False:
+if dbg_list_levels:
+    # l1.list_drives()
+    # l2.list_drives()
+    # l3.list_drives()
+    for x in range(len(levels)):
+        levels[x].list_drives()
+
+
+if dbg_list_cycles:
     s = ",level-1,level-1,level-1,level-2,level-2,level-2,level-3,level-3,level-3"
     plog.log(s)
     s = "i,usage_cycle,cycle_index,is_used,usage_cycle,cycle_index,is_used,usage_cycle,cycle_index,is_used"
@@ -57,44 +64,64 @@ if False:
 
     for w in range(n_weeks):
         d = start_date + timedelta(weeks=w)
-        l1.start_cycle(w, d)
-        l2.start_cycle(w, d)
-        l3.start_cycle(w, d)
-        s = f"{w},{l1.cycle_num},{l1.cycle_index},{l1.in_cycle:1}"
-        s += f",{l2.cycle_num},{l2.cycle_index},{l2.in_cycle:1}"
-        s += f",{l3.cycle_num},{l3.cycle_index},{l3.in_cycle:1}"
+        
+        # l1.start_cycle(w, d)
+        # l2.start_cycle(w, d)
+        # l3.start_cycle(w, d)
+        # s = f"{w},{l1.cycle_num},{l1.cycle_index},{l1.in_cycle:1}"
+        # s += f",{l2.cycle_num},{l2.cycle_index},{l2.in_cycle:1}"
+        # s += f",{l3.cycle_num},{l3.cycle_index},{l3.in_cycle:1}"
+
+        for x in range(len(levels)):
+            levels[x].start_cycle(w, d)
+
+        s = f"{w},"
+        for x in range(len(levels)-1, -1 , -1):
+            s += f",{levels[x].cycle_num},{levels[x].cycle_index},{levels[x].in_cycle:1}"
+
         plog.log(s)
 
 
-if True:
+if do_run_main:
     all_cycles = []
     out_list = []
+
     s = f"iter,date{l1.csv_head()},.{l2.csv_head()},.{l3.csv_head()},notes"
+    
     out_list += f"{s}\n"
+
     out_list2 = out_list.copy()
 
     for week_num in range(n_weeks):
         week_date = start_date + timedelta(weeks=week_num)
 
-        l1.start_cycle(week_num, week_date)
-        l2.start_cycle(week_num, week_date)
-        l3.start_cycle(week_num, week_date)
-        l4.start_cycle(week_num, week_date)
+        # l1.start_cycle(week_num, week_date)
+        # l2.start_cycle(week_num, week_date)
+        # l3.start_cycle(week_num, week_date)
+        # l4.start_cycle(week_num, week_date)
+        for x in range(len(levels)):
+            levels[x].start_cycle(week_num, week_date)
 
-        l4.pull_from_lower_level()
-
-        l3.pull_from_lower_level()
-
-        l2.pull_from_lower_level()
-
+        # l4.pull_from_lower_level()
+        # l3.pull_from_lower_level()
+        # l2.pull_from_lower_level()
+        for x in range(len(levels)-1, 0, -1):
+            level[x].pull_from_lower_level()
+        
         l1.free_drive()
 
-        s = f"{week_num},{week_date}{l1.csv_data()},{l2.csv_data()},{l3.csv_data()},before next drive"
+        #s = f"{week_num},{week_date}{l1.csv_data()},{l2.csv_data()},{l3.csv_data()},before next drive"
+        s = f"{week_num},{week_date}"
+        for x in range(len(levels)):
+            s += f"{levels[x].csv_data()},"
+        s += "before next drive"    
+        
         out_list2 += f"{s}\n"
 
         l1.next_drive()
 
-        all_cycles.append(l4.get_drives_in_use())
+        #all_cycles.append(l4.get_drives_in_use())
+        all_cycles.append(levels[-1:].get_drives_in_use())
 
         s = f"{week_num},{week_date}{l1.csv_data()},{l2.csv_data()},{l3.csv_data()},after next drive"
         out_list2 += f"{s}\n"
@@ -132,7 +159,9 @@ if True:
             out_file.write(f"{s}\n")
 
 
-if False:
-    l1.list_drives()
-    l2.list_drives()
-    l3.list_drives()
+if dbg_list_levels:
+    # l1.list_drives()
+    # l2.list_drives()
+    # l3.list_drives()
+    for x in range(len(levels)):
+        levels[x].list_drives()
