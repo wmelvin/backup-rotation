@@ -26,50 +26,50 @@ def get_levels_info_str(prefix, levels_list, suffix, do_diff):
 # Main script:
 
 run_at = datetime.now()
+
 now_stamp = run_at.strftime('%Y%m%d_%H%M%S')
 
-# filename_output_main = 'bakrot_output.csv'
-# filename_output_data = 'bakrot_output_data.csv'
-# filename_output_cycles = 'bakrot_output_cycles.csv'
-#
-filename_output_main = f"output-bakrot-{now_stamp}.csv"
-filename_output_data = f"output-bakrot-{now_stamp}-detail.csv"
-filename_output_cycles = f"output-bakrot-{now_stamp}-cycles.csv"
-filename_output_steps = f"output-bakrot-{now_stamp}-steps.txt"
+# Set scheme here:
+backup_scheme = 2
 
 
-
-start_date = date(2020,7,4)
-n_weeks = 104
-
+filename_output_main = f"output-bakrot-{backup_scheme}-{now_stamp}.csv"
+filename_output_data = f"output-bakrot-{backup_scheme}-{now_stamp}-detail.csv"
+filename_output_cycles = f"output-bakrot-{backup_scheme}-{now_stamp}-cycles.csv"
+filename_output_usage = f"output-bakrot-{backup_scheme}-{now_stamp}-usage.csv"
+filename_output_steps = f"output-bakrot-{backup_scheme}-{now_stamp}-steps.txt"
 
 plog = Plogger('bakrot_log.txt', filename_output_steps)
 
 plog.log2(f"Run started at {run_at.strftime('%Y-%m-%d %H:%M:%S')}")
 
+start_date = date(2020,7,4)
+
+n_weeks = 156
+
 pool = SlotPool(plog)
 
+if backup_scheme == 0:
+    l1 = RetentionLevel(1, 5, 1, pool, None, plog)
+    l2 = RetentionLevel(2, 4, 2, pool, l1, plog)
+    l3 = RetentionLevel(3, 6, 4, pool, l2, plog)
+    levels = [l1, l2, l3]
 
-# l1 = RetentionLevel(1, 5, 1, pool, None, plog)
-# l2 = RetentionLevel(2, 4, 2, pool, l1, plog)
-# l3 = RetentionLevel(3, 6, 4, pool, l2, plog)
-# levels = [l1, l2, l3]
+elif backup_scheme == 1:
+    l1 = RetentionLevel(1, 7,  1, pool, None, plog)
+    l2 = RetentionLevel(2, 5,  2, pool, l1, plog)
+    l3 = RetentionLevel(3, 3,  4, pool, l2, plog)
+    l4 = RetentionLevel(4, 4, 12, pool, l3, plog)    
+    levels = [l1, l2, l3, l4]
 
-
-# l1 = RetentionLevel(1, 7, 1, pool, None, plog)
-# l2 = RetentionLevel(2, 5, 2, pool, l1, plog)
-# l3 = RetentionLevel(3, 4, 4, pool, l2, plog)
-# l4 = RetentionLevel(4, 3, 8, pool, l3, plog)
-# l5 = RetentionLevel(5, 2, 16, pool, l4, plog)
-# levels = [l1, l2, l3, l4, l5]
-
-
-l1 = RetentionLevel(1, 7, 1, pool, None, plog)
-l2 = RetentionLevel(2, 5, 2, pool, l1, plog)
-l3 = RetentionLevel(3, 4, 4, pool, l2, plog)
-l4 = RetentionLevel(4, 2, 8, pool, l3, plog)
-l5 = RetentionLevel(5, 2, 12, pool, l4, plog)
-levels = [l1, l2, l3, l4, l5]
+else:
+    #-- Scheme 2
+    l1 = RetentionLevel(1, 7,  1, pool, None, plog)
+    l2 = RetentionLevel(2, 5,  2, pool, l1, plog)
+    l3 = RetentionLevel(3, 4,  4, pool, l2, plog)
+    l4 = RetentionLevel(4, 3,  8, pool, l3, plog)
+    l5 = RetentionLevel(5, 2, 16, pool, l4, plog)
+    levels = [l1, l2, l3, l4, l5]
 
 
 plog.log2(f"\nLevels:\n")
@@ -103,7 +103,7 @@ if dbg_list_cycles:
 
         plog.log(s)
 
-plog.log2(f"\nCycles:\n")
+plog.log2(f"\nCycles ({n_weeks}):\n")
 
 if do_run_main:
     all_cycles = []
@@ -177,6 +177,21 @@ if do_run_main:
             out_file.write(f"{s}\n")
 
 
+with open(filename_output_usage, 'w') as out_file:
+    #plog.log2(f"\nSlot use counts:\n")
+    out_file.write(f"Level,Slot,UseCount\n")
+    for x in range(len(levels)):
+        for y in range(levels[x].num_slots):
+            rs = levels[x].slots[y]
+            a = to_alpha_label(rs.slot_num)
+            n = rs.use_count
+            #plog.log2(f"Level {levels[x].level}, slot {a}: use_count = {n}.")
+            s = f"{levels[x].level},{a},{n}\n"
+            out_file.write(s)
+
+
 if dbg_list_levels:
     for x in range(len(levels)):
         levels[x].list_slots()
+
+
