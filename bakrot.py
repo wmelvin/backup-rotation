@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 
-# 2020-08-26 
+# 2020-09-04 
 
 from datetime import date, datetime, timedelta
-from bakrotate import DrivePool, RotationLevel, to_alpha_label
+
+#from bakrotate import DrivePool, RotationLevel, to_alpha_label
+from backup_retention import SlotPool, RetentionLevel, to_alpha_label
+
 from plogger import Plogger
 
 
@@ -22,7 +25,8 @@ def get_levels_info_str(prefix, levels_list, suffix, do_diff):
 #----------------------------------------------------------------------
 # Main script:
 
-now_stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+run_at = datetime.now()
+now_stamp = run_at.strftime('%Y%m%d_%H%M%S')
 
 # filename_output_main = 'bakrot_output.csv'
 # filename_output_data = 'bakrot_output_data.csv'
@@ -41,39 +45,44 @@ n_weeks = 104
 
 plog = Plogger('bakrot_log.txt', filename_output_steps)
 
-dp = DrivePool(plog)
+plog.log2(f"Run started at {run_at.strftime('%Y-%m-%d %H:%M:%S')}")
+
+pool = SlotPool(plog)
 
 
-# l1 = RotationLevel(1, 5, 1, dp, None, plog)
-# l2 = RotationLevel(2, 4, 2, dp, l1, plog)
-# l3 = RotationLevel(3, 6, 4, dp, l2, plog)
+# l1 = RetentionLevel(1, 5, 1, pool, None, plog)
+# l2 = RetentionLevel(2, 4, 2, pool, l1, plog)
+# l3 = RetentionLevel(3, 6, 4, pool, l2, plog)
 # levels = [l1, l2, l3]
 
 
-l1 = RotationLevel(1, 7, 1, dp, None, plog)
-l2 = RotationLevel(2, 5, 2, dp, l1, plog)
-l3 = RotationLevel(3, 4, 4, dp, l2, plog)
-l4 = RotationLevel(4, 3, 8, dp, l3, plog)
-l5 = RotationLevel(5, 2, 16, dp, l4, plog)
+# l1 = RetentionLevel(1, 7, 1, pool, None, plog)
+# l2 = RetentionLevel(2, 5, 2, pool, l1, plog)
+# l3 = RetentionLevel(3, 4, 4, pool, l2, plog)
+# l4 = RetentionLevel(4, 3, 8, pool, l3, plog)
+# l5 = RetentionLevel(5, 2, 16, pool, l4, plog)
+# levels = [l1, l2, l3, l4, l5]
+
+
+l1 = RetentionLevel(1, 7, 1, pool, None, plog)
+l2 = RetentionLevel(2, 5, 2, pool, l1, plog)
+l3 = RetentionLevel(3, 4, 4, pool, l2, plog)
+l4 = RetentionLevel(4, 2, 8, pool, l3, plog)
+l5 = RetentionLevel(5, 2, 12, pool, l4, plog)
 levels = [l1, l2, l3, l4, l5]
 
 
-# l1 = RotationLevel(1, 5, 1, dp, None, plog)
-# l2 = RotationLevel(2, 3, 2, dp, l1, plog)
-# l3 = RotationLevel(3, 3, 4, dp, l2, plog)
-# l4 = RotationLevel(4, 3, 8, dp, l3, plog)
-# l5 = RotationLevel(5, 3, 16, dp, l4, plog)
-# levels = [l1, l2, l3, l4, l5]
-
+plog.log2(f"\nLevels:\n")
+for x in range(len(levels)):
+    plog.log2(f"Level {levels[x].level}: slots = {levels[x].num_slots}, interval = {levels[x].usage_interval}.")
 
 dbg_list_levels = False
 dbg_list_cycles = False
 do_run_main = True
 
-
 if dbg_list_levels:
     for x in range(len(levels)):
-        levels[x].list_drives()
+        levels[x].list_slots()
 
 
 if dbg_list_cycles:
@@ -94,6 +103,7 @@ if dbg_list_cycles:
 
         plog.log(s)
 
+plog.log2(f"\nCycles:\n")
 
 if do_run_main:
     all_cycles = []
@@ -111,7 +121,7 @@ if do_run_main:
     for week_num in range(n_weeks):
         week_date = start_date + timedelta(weeks=week_num)
 
-        plog.log2(f"WEEK OF {week_date:%Y-%m-%d}")
+        plog.log2(f"Week of {week_date:%Y-%m-%d}")
 
         info_prefix = f"{week_num},{week_date}"
 
@@ -121,15 +131,15 @@ if do_run_main:
         for x in range(len(levels)-1, 0, -1):
             levels[x].pull_from_lower_level()
 
-        l1.free_drive()
+        l1.free_slot()
 
-        out_list2 += get_levels_info_str(info_prefix, levels, "before next drive", False)
+        out_list2 += get_levels_info_str(info_prefix, levels, "before next slot", False)
 
-        l1.next_drive()
+        l1.next_slot()
 
-        all_cycles.append(levels[len(levels)-1].get_drives_in_use())
+        all_cycles.append(levels[len(levels)-1].get_slots_in_use())
 
-        out_list2 += get_levels_info_str(info_prefix, levels, "after next drive", False)
+        out_list2 += get_levels_info_str(info_prefix, levels, "after next slot", False)
 
         out_list += get_levels_info_str(info_prefix, levels, "", True)
 
@@ -169,4 +179,4 @@ if do_run_main:
 
 if dbg_list_levels:
     for x in range(len(levels)):
-        levels[x].list_drives()
+        levels[x].list_slots()

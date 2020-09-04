@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# 2020-08-26 
+# 2020-09-04 
 
 
 from datetime import datetime
@@ -21,8 +21,8 @@ class Plogger():
     def log2(self, msg):
         if len(self.filename2) == 0:
             return
-        # Print and write to second log.
+        # Write to second log.
         # Second log does not add a time stamp.
         with open(self.filename2,  'a') as log_file:
-            print(msg)
+            #print(msg)
             log_file.write(f"{msg}\n")
