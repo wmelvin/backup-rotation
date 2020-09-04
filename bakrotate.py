@@ -12,6 +12,8 @@ import string
 
 def to_alpha_label(n):
     # Convert a number to an Excel-style base-26 alphabet label.
+    if n < 0:
+        return '*'
     a = []
     while n > 0:
         q, r = divmod(n, 26)
@@ -32,15 +34,17 @@ class DrivePool():
         self.lastdrive = 0
         self.logger = logger
 
-    def get_next_drive(self):        
+    def get_next_drive(self):
         if len(self.drivepool) == 0:
             self.lastdrive = self.lastdrive + 1
             n = self.lastdrive
             self.logger.log(f"DrivePool.get_next_drive: {n} new")
+            self.logger.log2(f"    New slot {n}")
             return DriveSlot(n, 0, 0)
         else:
             ds = self.drivepool.pop()
             self.logger.log(f"DrivePool.get_next_drive: {ds.slot_num} from pool")
+            self.logger.log2(f"    Reuse slot {ds.slot_num}")
         return DriveSlot(ds.slot_num, ds.use_count, 0)
 
     def add_drive(self, drive_slot):
@@ -63,21 +67,31 @@ class RotationLevel():
         #self.last_index = -1
         self.in_cycle = False
         self.drives = [DriveSlot(0, 0, 0) for x in range(num_drives)]
-        self.prevs =  [DriveSlot(0, 0, 0) for x in range(num_drives)]        
+        self.prevs =  [DriveSlot(0, 0, 0) for x in range(num_drives)]
+
+    # def level_info(self):
+    #     info_dict = {
+    #         'level': self.level,
+    #         'num_drives': self.num_drives,
+    #         'usage_interval': self.usage_interval
+    #     }
+    #     return info_dict
 
     def start_cycle(self, cycle_num, cycle_date):
         self.cycle_num = cycle_num
         self.cycle_date = cycle_date
         self.in_cycle = ((cycle_num + 1) % self.usage_interval == 0)
-        
+
         self.cycle_index = (self.usage_cycle(cycle_num) % self.num_drives)
         # self.cycle_index = self.last_index + 1
         # if self.cycle_index == self.num_drives:
         #     self.cycle_index = 0
-        
+
         self.prevs = [self.drives[x] for x in range(self.num_drives)]
 
         self.logger.log(f"L{self.level} start_cycle {cycle_num}, date={cycle_date}, index={self.cycle_index}, in_cycle={self.in_cycle}")
+
+        #self.logger.log2(f"START CYCLE for {cycle_date:%Y-%m-%d}")
 
     # def is_full(self):
     #     for ds in self.drives:
@@ -97,6 +111,7 @@ class RotationLevel():
 
     def mark_free(self, index):
         ds = self.drives[index]
+        self.logger.log2(f"  Free slot {ds.slot_num} in level {self.level}.")
         self.drives[index] = DriveSlot(ds.slot_num * -1, ds.use_count, ds.backup_date)
 
 
@@ -124,11 +139,12 @@ class RotationLevel():
             pulled = self.level_below.pull_drive()
             if 0 < pulled.slot_num:
                 self.free_drive()
+                self.logger.log2(f"  Move slot {pulled.slot_num} to level {self.level}.")
                 self.drives[self.cycle_index] = pulled
 
     def free_drive(self):
         if self.in_cycle:
-            ds = self.drives[self.cycle_index] 
+            ds = self.drives[self.cycle_index]
             if 0 < ds.slot_num:
                 self.logger.log(f"L{self.level} free_drive: cycle={self.cycle_num}, index={self.cycle_index}")
                 self.drive_pool.add_drive(ds)
@@ -137,6 +153,7 @@ class RotationLevel():
     def next_drive(self):
         if self.in_cycle:
             self.logger.log(f"L{self.level} next_drive: cycle={self.cycle_num}, index={self.cycle_index}")
+            self.logger.log2(f"  Get next drive for level {self.level}.")
             ds = self.drive_pool.get_next_drive()
             self.drives[self.cycle_index] = DriveSlot(ds.slot_num, ds.use_count + 1, self.cycle_date)
             #self.last_index = self.cycle_index
@@ -151,7 +168,7 @@ class RotationLevel():
         s = ''
         for i in range(self.num_drives):
             if self.drives[i].slot_num == 0:
-                s += ','    
+                s += ','
             else:
                 s +=  f",\"{to_alpha_label(self.drives[i].slot_num)} ({self.drives[i].backup_date})\""
         return s
@@ -168,7 +185,6 @@ class RotationLevel():
         drives_list = []
         for x in range(self.num_drives):
             if 0 < self.drives[x].slot_num:
-                #t = (self.drv_date(x).strftime('%Y-%m-%d'), to_alpha_label(self.drv_num(x)))
                 t = (self.drives[x].backup_date, self.drives[x].slot_num, self.drives[x].use_count, self.level)
                 drives_list.append(t)
         if not self.level_below is None:

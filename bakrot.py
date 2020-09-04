@@ -24,13 +24,14 @@ def get_levels_info_str(prefix, levels_list, suffix, do_diff):
 
 now_stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
-# output_filename_main = 'bakrot_output.csv'
-# output_filename_data = 'bakrot_output_data.csv'
-# output_filename_cycles = 'bakrot_output_cycles.csv'
+# filename_output_main = 'bakrot_output.csv'
+# filename_output_data = 'bakrot_output_data.csv'
+# filename_output_cycles = 'bakrot_output_cycles.csv'
 #
-output_filename_main = f"output-bakrot-{now_stamp}.csv"
-output_filename_data = f"output-bakrot-{now_stamp}-detail.csv"
-output_filename_cycles = f"output-bakrot-{now_stamp}-cycles.csv"
+filename_output_main = f"output-bakrot-{now_stamp}.csv"
+filename_output_data = f"output-bakrot-{now_stamp}-detail.csv"
+filename_output_cycles = f"output-bakrot-{now_stamp}-cycles.csv"
+filename_output_steps = f"output-bakrot-{now_stamp}-steps.txt"
 
 
 
@@ -38,28 +39,30 @@ start_date = date(2020,7,4)
 n_weeks = 104
 
 
-plog = Plogger('bakrot_log.txt')
+plog = Plogger('bakrot_log.txt', filename_output_steps)
 
 dp = DrivePool(plog)
 
 
-l1 = RotationLevel(1, 5, 1, dp, None, plog)
-l2 = RotationLevel(2, 4, 2, dp, l1, plog)
-l3 = RotationLevel(3, 6, 4, dp, l2, plog)
-levels = [l1, l2, l3]
+# l1 = RotationLevel(1, 5, 1, dp, None, plog)
+# l2 = RotationLevel(2, 4, 2, dp, l1, plog)
+# l3 = RotationLevel(3, 6, 4, dp, l2, plog)
+# levels = [l1, l2, l3]
 
-# l1 = RotationLevel(1, 7, 1, dp, None, plog)
-# l2 = RotationLevel(2, 5, 2, dp, l1, plog)
-# l3 = RotationLevel(3, 4, 4, dp, l2, plog)
-# l4 = RotationLevel(4, 3, 8, dp, l3, plog)
-# l5 = RotationLevel(5, 2, 16, dp, l4, plog)
+
+l1 = RotationLevel(1, 7, 1, dp, None, plog)
+l2 = RotationLevel(2, 5, 2, dp, l1, plog)
+l3 = RotationLevel(3, 4, 4, dp, l2, plog)
+l4 = RotationLevel(4, 3, 8, dp, l3, plog)
+l5 = RotationLevel(5, 2, 16, dp, l4, plog)
+levels = [l1, l2, l3, l4, l5]
+
 
 # l1 = RotationLevel(1, 5, 1, dp, None, plog)
 # l2 = RotationLevel(2, 3, 2, dp, l1, plog)
 # l3 = RotationLevel(3, 3, 4, dp, l2, plog)
 # l4 = RotationLevel(4, 3, 8, dp, l3, plog)
 # l5 = RotationLevel(5, 3, 16, dp, l4, plog)
-
 # levels = [l1, l2, l3, l4, l5]
 
 
@@ -100,13 +103,15 @@ if do_run_main:
     for x in range(len(levels)):
         header_csv += f"{levels[x].csv_head()},."
     header_csv += f",\"Notes\"\n"
-    
+
     out_list += header_csv
 
     out_list2 = out_list.copy()
 
     for week_num in range(n_weeks):
         week_date = start_date + timedelta(weeks=week_num)
+
+        plog.log2(f"WEEK OF {week_date:%Y-%m-%d}")
 
         info_prefix = f"{week_num},{week_date}"
 
@@ -115,25 +120,25 @@ if do_run_main:
 
         for x in range(len(levels)-1, 0, -1):
             levels[x].pull_from_lower_level()
-        
+
         l1.free_drive()
 
-        out_list2 += get_levels_info_str(info_prefix, levels, "before next drive", False) 
+        out_list2 += get_levels_info_str(info_prefix, levels, "before next drive", False)
 
         l1.next_drive()
 
         all_cycles.append(levels[len(levels)-1].get_drives_in_use())
-        
-        out_list2 += get_levels_info_str(info_prefix, levels, "after next drive", False)         
 
-        out_list += get_levels_info_str(info_prefix, levels, "", True) 
+        out_list2 += get_levels_info_str(info_prefix, levels, "after next drive", False)
+
+        out_list += get_levels_info_str(info_prefix, levels, "", True)
 
 
-    with open(output_filename_main, 'w') as out_file:
+    with open(filename_output_main, 'w') as out_file:
         out_file.writelines(out_list)
 
 
-    with open(output_filename_data, 'w') as out_file:
+    with open(filename_output_data, 'w') as out_file:
         out_file.writelines(out_list2)
 
 
@@ -147,7 +152,7 @@ if do_run_main:
     all_dates.sort()
 
 
-    with open(output_filename_cycles, 'w') as out_file:
+    with open(filename_output_cycles, 'w') as out_file:
         for d in all_dates:
             s = d
             for cycle in all_cycles:
