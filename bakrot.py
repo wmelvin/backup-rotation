@@ -30,7 +30,7 @@ run_at = datetime.now()
 now_stamp = run_at.strftime('%Y%m%d_%H%M%S')
 
 # Set scheme here:
-backup_scheme = 2
+backup_scheme = 3
 
 
 filename_output_main = f"output-bakrot-{backup_scheme}-{now_stamp}.csv"
@@ -51,8 +51,9 @@ pool = SlotPool(plog)
 
 if backup_scheme == 0:
     l1 = RetentionLevel(1, 5, 1, pool, None, plog)
-    l2 = RetentionLevel(2, 4, 2, pool, l1, plog)
+    l2 = RetentionLevel(2, 3, 2, pool, l1, plog)
     l3 = RetentionLevel(3, 6, 4, pool, l2, plog)
+    # total slots         14
     levels = [l1, l2, l3]
 
 elif backup_scheme == 1:
@@ -60,15 +61,25 @@ elif backup_scheme == 1:
     l2 = RetentionLevel(2, 5,  2, pool, l1, plog)
     l3 = RetentionLevel(3, 3,  4, pool, l2, plog)
     l4 = RetentionLevel(4, 4, 12, pool, l3, plog)    
+    # total slots         19
     levels = [l1, l2, l3, l4]
 
-else:
-    #-- Scheme 2
+elif backup_scheme == 2:
     l1 = RetentionLevel(1, 7,  1, pool, None, plog)
     l2 = RetentionLevel(2, 5,  2, pool, l1, plog)
     l3 = RetentionLevel(3, 4,  4, pool, l2, plog)
     l4 = RetentionLevel(4, 3,  8, pool, l3, plog)
     l5 = RetentionLevel(5, 2, 16, pool, l4, plog)
+    # total slots         21
+    levels = [l1, l2, l3, l4, l5]
+else:
+    #-- Scheme 3
+    l1 = RetentionLevel(1, 7,  1, pool, None, plog)
+    l2 = RetentionLevel(2, 3,  2, pool, l1, plog)
+    l3 = RetentionLevel(3, 3,  4, pool, l2, plog)
+    l4 = RetentionLevel(4, 3,  8, pool, l3, plog)
+    l5 = RetentionLevel(5, 2, 16, pool, l4, plog)
+    # total slots         18
     levels = [l1, l2, l3, l4, l5]
 
 
