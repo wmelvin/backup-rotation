@@ -32,6 +32,12 @@ def to_alpha_label(n):
     return ''.join(reversed(a))
 
 
+def slot_label(n):
+    #return f"{to_alpha_label(n)} ({n})"
+    return f"{to_alpha_label(n)}"
+
+
+
 # A RetentionSlot contains a set of one or more backup media (such 
 # as an external hard drive).
 
@@ -49,12 +55,12 @@ class SlotPool():
             self.lastslot = self.lastslot + 1
             n = self.lastslot
             self.logger.log(f"SlotPool.get_next_slot: {n} new")
-            self.logger.log2(f"    New slot {n}")
+            self.logger.log2(f"    New slot {slot_label(n)}")
             return RetentionSlot(n, 0, 0)
         else:
             ds = self.pool.pop()
             self.logger.log(f"SlotPool.get_next_slot: {ds.slot_num} from pool")
-            self.logger.log2(f"    Reuse slot {ds.slot_num}")
+            self.logger.log2(f"    Reuse slot {slot_label(ds.slot_num)}")
         return RetentionSlot(ds.slot_num, ds.use_count, 0)
 
     def add_slot(self, slot):
@@ -100,7 +106,7 @@ class RetentionLevel():
 
     def mark_free(self, index):
         ds = self.slots[index]
-        self.logger.log2(f"  Free slot {ds.slot_num} in level {self.level}.")
+        self.logger.log2(f"  Free slot {slot_label(ds.slot_num)} in level {self.level}.")
         self.slots[index] = RetentionSlot(ds.slot_num * -1, ds.use_count, ds.backup_date)
 
     def pull_slot(self):
@@ -122,7 +128,7 @@ class RetentionLevel():
             pulled = self.level_below.pull_slot()
             if 0 < pulled.slot_num:
                 self.free_slot()
-                self.logger.log2(f"  Move slot {pulled.slot_num} to level {self.level}.")
+                self.logger.log2(f"  Move slot {slot_label(pulled.slot_num)} to level {self.level}.")
                 self.slots[self.cycle_index] = pulled
 
     def free_slot(self):

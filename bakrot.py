@@ -30,7 +30,7 @@ run_at = datetime.now()
 now_stamp = run_at.strftime('%Y%m%d_%H%M%S')
 
 # Set scheme here:
-backup_scheme = 3
+backup_scheme = 4
 
 
 filename_output_main = f"output-bakrot-{backup_scheme}-{now_stamp}.csv"
@@ -72,16 +72,25 @@ elif backup_scheme == 2:
     l5 = RetentionLevel(5, 2, 16, pool, l4, plog)
     # total slots         21
     levels = [l1, l2, l3, l4, l5]
-else:
-    #-- Scheme 3
+
+elif backup_scheme == 3:
     l1 = RetentionLevel(1, 7,  1, pool, None, plog)
-    l2 = RetentionLevel(2, 3,  2, pool, l1, plog)
+    l2 = RetentionLevel(2, 5,  2, pool, l1, plog)
     l3 = RetentionLevel(3, 3,  4, pool, l2, plog)
-    l4 = RetentionLevel(4, 3,  8, pool, l3, plog)
-    l5 = RetentionLevel(5, 2, 16, pool, l4, plog)
+    l4 = RetentionLevel(4, 2,  9, pool, l3, plog)
+    l5 = RetentionLevel(5, 1, 18, pool, l4, plog)
     # total slots         18
     levels = [l1, l2, l3, l4, l5]
 
+else:
+    #-- Scheme 4
+    l1 = RetentionLevel(1, 3,  1, pool, None, plog)
+    l2 = RetentionLevel(2, 4,  2, pool, l1, plog)
+    l3 = RetentionLevel(3, 6,  4, pool, l2, plog)
+    l4 = RetentionLevel(4, 8,  8, pool, l3, plog)
+    l5 = RetentionLevel(5, 10, 16, pool, l4, plog)
+    # total slots         30
+    levels = [l1, l2, l3, l4, l5]
 
 plog.log2(f"\nLevels:\n")
 for x in range(len(levels)):
@@ -189,14 +198,12 @@ if do_run_main:
 
 
 with open(filename_output_usage, 'w') as out_file:
-    #plog.log2(f"\nSlot use counts:\n")
     out_file.write(f"Level,Slot,UseCount\n")
     for x in range(len(levels)):
         for y in range(levels[x].num_slots):
             rs = levels[x].slots[y]
             a = to_alpha_label(rs.slot_num)
             n = rs.use_count
-            #plog.log2(f"Level {levels[x].level}, slot {a}: use_count = {n}.")
             s = f"{levels[x].level},{a},{n}\n"
             out_file.write(s)
 
