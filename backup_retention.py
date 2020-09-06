@@ -70,13 +70,18 @@ class SlotPool():
             self.pool.append(slot)
 
 
+class RetentionLevelInvalidInterval(Exception):    
+    # def __init__(self):
+    #     self.message = "The usage_interval must be less than that of the level_below."
+    pass
+
 class RetentionLevel():
-    def __init__(self, level, num_slots, usage_interval, slot_pool, rotation_level_below, logger):
+    def __init__(self, level, num_slots, usage_interval, slot_pool, level_below, logger):
         self.level = level
         self.num_slots = num_slots
         self.usage_interval = usage_interval
         self.slot_pool = slot_pool
-        self.level_below = rotation_level_below
+        self.level_below = level_below
         self.logger = logger
         self.cycle_num = -1
         self.cycle_date = -1
@@ -85,6 +90,11 @@ class RetentionLevel():
         self.in_cycle = False
         self.slots = [RetentionSlot(0, 0, 0) for x in range(num_slots)]
         self.prevs =  [RetentionSlot(0, 0, 0) for x in range(num_slots)]
+        if not self.level_below is None:
+            if self.usage_interval <= self.level_below.usage_interval:
+                err_msg = "usage_interval ({0}) must be greater than that of level_below ({1})."
+                err_msg = err_msg.format(self.usage_interval, self.level_below.usage_interval)
+                raise RetentionLevelInvalidInterval(err_msg)
 
     def start_cycle(self, cycle_num, cycle_date):
         self.cycle_num = cycle_num
