@@ -5,7 +5,7 @@
 #
 # Backup roation calculator.
 #
-# 2020-09-04 
+# 2020-09-06 
 #
 #----------------------------------------------------------------------
 
@@ -32,17 +32,20 @@ def get_levels_info_str(prefix, levels_list, suffix, do_diff):
 
 run_at = datetime.now()
 
-now_tag = run_at.strftime('%Y%m%d_%H%M%S')
+#-- Include date_time suffix, or not:
+#output_suffix = f"-{run_at.strftime('%Y%m%d_%H%M%S')}"
+output_suffix = ''
 
-# Set scheme here:
+
+#-- Set scheme here:
 backup_scheme = 4
 
 
-filename_output_main = f"output-bakrot-{backup_scheme}-{now_tag}.csv"
-filename_output_data = f"output-bakrot-{backup_scheme}-{now_tag}-detail.csv"
-filename_output_cycles = f"output-bakrot-{backup_scheme}-{now_tag}-cycles.csv"
-filename_output_usage = f"output-bakrot-{backup_scheme}-{now_tag}-usage.csv"
-filename_output_steps = f"output-bakrot-{backup_scheme}-{now_tag}-steps.txt"
+filename_output_main = f"output-bakrot-{backup_scheme}{output_suffix}.csv"
+filename_output_data = f"output-bakrot-{backup_scheme}{output_suffix}-detail.csv"
+filename_output_cycles = f"output-bakrot-{backup_scheme}{output_suffix}-cycles.csv"
+filename_output_usage = f"output-bakrot-{backup_scheme}{output_suffix}-usage.csv"
+filename_output_steps = f"output-bakrot-{backup_scheme}{output_suffix}-steps.txt"
 
 plog = Plogger('bakrot_log.txt', filename_output_steps)
 
@@ -50,7 +53,10 @@ plog.log2(f"Run started at {run_at.strftime('%Y-%m-%d %H:%M:%S')}")
 
 start_date = date(2020,7,4)
 
+# Cycles are weeks in this insance.
+#
 n_weeks = 156
+#n_weeks = 520
 
 pool = SlotPool(plog)
 

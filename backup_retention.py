@@ -5,6 +5,8 @@
 #
 # 2020-09-04: Replaces bakrotate.py. Changed class and tuple names.
 #   Using 'retention' instead of 'rotation', 'slot' instead of 'drive'.
+#
+# 2020-09-06: Refactor logging.
 #   
 #
 #----------------------------------------------------------------------
@@ -33,9 +35,11 @@ def to_alpha_label(n):
     return ''.join(reversed(a))
 
 
-def slot_label(n):
-    #return f"{to_alpha_label(n)} ({n})"
-    return f"{to_alpha_label(n)}"
+def slot_label(n, show_number=False):
+    if show_number:
+        return f"{to_alpha_label(n)}({n})"
+    else:
+        return f"{to_alpha_label(n)}"
 
 
 
@@ -55,25 +59,24 @@ class SlotPool():
         if len(self.pool) == 0:
             self.lastslot = self.lastslot + 1
             n = self.lastslot
-            self.logger.log(f"SlotPool.get_next_slot: {n} new")
+            self.logger.log(f"SlotPool.get_next_slot: {slot_label(n, True)} new")
             self.logger.log2(f"    New slot {slot_label(n)}")
             return RetentionSlot(n, 0, 0)
         else:
             ds = self.pool.pop()
-            self.logger.log(f"SlotPool.get_next_slot: {ds.slot_num} from pool")
+            self.logger.log(f"SlotPool.get_next_slot: {slot_label(ds.slot_num, True)} from pool")
             self.logger.log2(f"    Reuse slot {slot_label(ds.slot_num)}")
         return RetentionSlot(ds.slot_num, ds.use_count, 0)
 
     def add_slot(self, slot):
         if 0 < slot.slot_num:
-            self.logger.log(f"SlotPool.add_slot: {slot.slot_num} added to pool")
+            self.logger.log(f"SlotPool.add_slot: {slot_label(slot.slot_num, True)} added to pool")
             self.pool.append(slot)
 
 
 class RetentionLevelInvalidInterval(Exception):    
-    # def __init__(self):
-    #     self.message = "The usage_interval must be less than that of the level_below."
     pass
+
 
 class RetentionLevel():
     def __init__(self, level, num_slots, usage_interval, slot_pool, level_below, logger):
@@ -90,11 +93,14 @@ class RetentionLevel():
         self.in_cycle = False
         self.slots = [RetentionSlot(0, 0, 0) for x in range(num_slots)]
         self.prevs =  [RetentionSlot(0, 0, 0) for x in range(num_slots)]
+
+        # Higher levels must have longer intervals.
         if not self.level_below is None:
             if self.usage_interval <= self.level_below.usage_interval:
                 err_msg = "usage_interval ({0}) must be greater than that of level_below ({1})."
                 err_msg = err_msg.format(self.usage_interval, self.level_below.usage_interval)
                 raise RetentionLevelInvalidInterval(err_msg)
+
 
     def start_cycle(self, cycle_num, cycle_date):
         self.cycle_num = cycle_num
@@ -106,7 +112,12 @@ class RetentionLevel():
 
         self.prevs = [self.slots[x] for x in range(self.num_slots)]
 
-        self.logger.log(f"L{self.level} start_cycle {cycle_num}, date={cycle_date}, index={self.cycle_index}, in_cycle={self.in_cycle}")
+        self.logger.log(
+            "Cycle {0}, Level {1}, Index {2}: start_cycle, in_cycle={3}".format(
+                self.cycle_num, self.level, self.cycle_index, self.in_cycle
+            )
+        )
+
 
     def level_is_full(self):
         for i in range(self.num_slots):
@@ -135,64 +146,53 @@ class RetentionLevel():
 
     def mark_free(self, index):
         ds = self.slots[index]
-        self.logger.log2(f"  Free slot {slot_label(ds.slot_num)} in level {self.level}.")
+        self.logger.log2(f"  Free slot {slot_label(ds.slot_num)} in level {self.level} (index {index}).")
         self.slots[index] = RetentionSlot(ds.slot_num * -1, ds.use_count, ds.backup_date)
         self.free_index = index
-
-    # def pull_slot(self):
-    #     ds = self.slots[self.cycle_index]
-    #     if 0 < ds.slot_num:
-    #         self.mark_free(self.cycle_index)
-    #         self.logger.log(f"L{self.level} pull_slot: cycle={self.cycle_num}, index={self.cycle_index}, slot={ds.slot_num}, date={ds.backup_date}")
-    #         return ds
-    #     else:
-    #         if not self.level_below is None:
-    #             return self.level_below.pull_slot()
-    #         else:
-    #             self.logger.log(f"L{self.level} pull_slot: cycle={self.cycle_num}, index={self.cycle_index}, No slot to pull")
-    #             return RetentionSlot(0, 0, 0)
 
     def pull_slot(self):
         if self.level_is_full():
             slot_index = self.oldest_backup_index()
             ds = self.slots[slot_index]        
             self.mark_free(slot_index)
-            self.logger.log(f"L{self.level} pull_slot: cycle={self.cycle_num}, index={slot_index}, slot={ds.slot_num}, date={ds.backup_date}")
+            self.logger.log(
+                "Cycle {0}, Level {1}, Index {2}: pull_slot, slot={3}, date={4}".format(
+                    self.cycle_num, self.level, slot_index, slot_label(ds.slot_num, True), ds.backup_date
+                )
+            )
             return ds
-        # else:
-        #     if not self.level_below is None:
-        #         return self.level_below.pull_slot()
-        #     else:
-        #         self.logger.log(f"L{self.level} pull_slot: cycle={self.cycle_num}, index={self.cycle_index}, No slot to pull")
-        #         return RetentionSlot(0, 0, 0)
         else:
-            self.logger.log(f"L{self.level} pull_slot: cycle={self.cycle_num}, index={self.cycle_index}, No slot to pull")
+            self.logger.log(
+                "Cycle {0}, Level {1}, Index {2}: pull_slot, No slot to pull (level not full)".format(
+                    self.cycle_num, self.level, self.cycle_index
+                )
+            )
             return RetentionSlot(0, 0, 0)
 
     def pull_from_lower_level(self):
         if self.in_cycle:
-            self.logger.log(f"L{self.level} pull_from_lower_level:  cycle={self.cycle_num}, index={self.cycle_index}")
+            self.logger.log(
+                "Cycle {0}, Level {1}, Index {2}: pull_from_lower_level".format(
+                    self.cycle_num, self.level, self.cycle_index
+                )
+            )
             pulled = self.level_below.pull_slot()
             if 0 < pulled.slot_num:
                 self.free_slot()
-                self.logger.log2(f"  Move slot {slot_label(pulled.slot_num)} to level {self.level}.")
+                self.logger.log2(f"  Move slot {slot_label(pulled.slot_num)} to level {self.level} (index {self.cycle_index}).")
                 self.slots[self.cycle_index] = pulled
 
     def free_slot(self):
         if self.in_cycle:
             ds = self.slots[self.cycle_index]
             if 0 < ds.slot_num:
-                self.logger.log(f"L{self.level} free_slot: cycle={self.cycle_num}, index={self.cycle_index}")
+                self.logger.log(
+                    "Cycle {0}, Level {1}, Index {2}: free_slot".format(
+                        self.cycle_num, self.level, self.cycle_index
+                    )
+                )
                 self.slot_pool.add_slot(ds)
                 self.mark_free(self.cycle_index)
-
-    # def next_slot(self):
-    #     if self.in_cycle:
-    #         self.logger.log(f"L{self.level} next_slot: cycle={self.cycle_num}, index={self.cycle_index}")
-    #         self.logger.log2(f"  Get next slot for level {self.level}.")
-    #         ds = self.slot_pool.get_next_slot()
-    #         self.slots[self.cycle_index] = RetentionSlot(ds.slot_num, ds.use_count + 1, self.cycle_date)
-    #         #self.last_index = self.cycle_index
 
     def next_slot(self):
         if self.in_cycle:
@@ -200,8 +200,12 @@ class RetentionLevel():
                 next_index = self.cycle_index
             else:
                 next_index = self.free_index
-            self.logger.log(f"L{self.level} next_slot: cycle={self.cycle_num}, index={next_index}")
-            self.logger.log2(f"  Get next slot for level {self.level}.")
+            self.logger.log(
+                "Cycle {0}, Level {1}, Index {2}: next_slot".format(
+                    self.cycle_num, self.level, next_index
+                )
+            )
+            self.logger.log2(f"  Get next slot for level {self.level} (index {next_index}).")
             ds = self.slot_pool.get_next_slot()
             self.slots[next_index] = RetentionSlot(ds.slot_num, ds.use_count + 1, self.cycle_date)
 
@@ -209,7 +213,7 @@ class RetentionLevel():
     def csv_head(self):
         s = ''
         for i in range(self.num_slots):
-            s += f",L{self.level}-S{i}"
+            s += f",Level {self.level}.{i}"
         return s
 
     def csv_data(self):
