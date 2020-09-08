@@ -20,9 +20,9 @@ def get_levels_info_str(prefix, levels_list, suffix, do_diff):
     s = f"{prefix}"
     for x in range(len(levels)):
         if do_diff:
-            s += f"{levels_list[x].csv_diff()},"
+            s += f"{levels_list[x].csv_changed_slots()},"
         else:
-            s += f"{levels_list[x].csv_data()},"
+            s += f"{levels_list[x].csv_all_slots()},"
     s += f",\"{suffix}\"\n"
     return s
 
@@ -102,6 +102,8 @@ else:
     # total slots         19
     levels = [l1, l2, l3, l4]
 
+top_index = len(levels)-1
+
 plog.log2(f"\nLevels:\n")
 for x in range(len(levels)):
     plog.log2(f"Level {levels[x].level}: slots = {levels[x].num_slots}, interval = {levels[x].usage_interval}.")
@@ -139,9 +141,9 @@ if do_run_main:
     all_cycles = []
     out_list = []
 
-    header_csv = "iter,date"
+    header_csv = '"cycle","date"'
     for x in range(len(levels)):
-        header_csv += f"{levels[x].csv_head()},."
+        header_csv += f"{levels[x].csv_header()},."
     header_csv += f",\"Notes\"\n"
 
     out_list += header_csv
@@ -158,7 +160,7 @@ if do_run_main:
         for x in range(len(levels)):
             levels[x].start_cycle(week_num, week_date)
 
-        for x in range(len(levels)-1, 0, -1):
+        for x in range(top_index, 0, -1):
             levels[x].pull_from_lower_level()
 
         l1.free_slot()
@@ -167,7 +169,7 @@ if do_run_main:
 
         l1.next_slot()
 
-        all_cycles.append(levels[len(levels)-1].get_slots_in_use())
+        all_cycles.append(levels[top_index].get_slots_in_use())
 
         out_list2 += get_levels_info_str(info_prefix, levels, "after next slot", False)
 

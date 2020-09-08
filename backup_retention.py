@@ -46,7 +46,7 @@ def slot_label(n, show_number=False):
 # A RetentionSlot contains a set of one or more backup media (such 
 # as an external hard drive).
 
-RetentionSlot = collections.namedtuple('RetentionSlot', 'slot_num, use_count, backup_date')
+RetentionSlot = collections.namedtuple('RetentionSlot', 'slot_num, use_count, cycle_used, backup_date')
 
 
 class SlotPool():
@@ -61,12 +61,12 @@ class SlotPool():
             n = self.lastslot
             self.logger.log(f"SlotPool.get_next_slot: {slot_label(n, True)} new")
             self.logger.log2(f"    New slot {slot_label(n)}")
-            return RetentionSlot(n, 0, 0)
+            return RetentionSlot(n, 0, 0, 0)
         else:
             ds = self.pool.pop()
             self.logger.log(f"SlotPool.get_next_slot: {slot_label(ds.slot_num, True)} from pool")
             self.logger.log2(f"    Reuse slot {slot_label(ds.slot_num)}")
-        return RetentionSlot(ds.slot_num, ds.use_count, 0)
+        return RetentionSlot(ds.slot_num, ds.use_count, 0, 0)
 
     def add_slot(self, slot):
         if 0 < slot.slot_num:
@@ -91,8 +91,8 @@ class RetentionLevel():
         self.cycle_index = -1
         self.free_index = -1
         self.in_cycle = False
-        self.slots = [RetentionSlot(0, 0, 0) for x in range(num_slots)]
-        self.prevs =  [RetentionSlot(0, 0, 0) for x in range(num_slots)]
+        self.slots = [RetentionSlot(0, 0, 0, 0) for x in range(num_slots)]
+        self.prevs =  [RetentionSlot(0, 0, 0, 0) for x in range(num_slots)]
 
         # Higher levels must have longer intervals.
         if not self.level_below is None:
@@ -147,7 +147,7 @@ class RetentionLevel():
     def mark_free(self, index):
         ds = self.slots[index]
         self.logger.log2(f"  Free slot {slot_label(ds.slot_num)} in level {self.level} (index {index}).")
-        self.slots[index] = RetentionSlot(ds.slot_num * -1, ds.use_count, ds.backup_date)
+        self.slots[index] = RetentionSlot(ds.slot_num * -1, ds.use_count, ds.cycle_used, ds.backup_date)
         self.free_index = index
 
     def pull_slot(self):
@@ -167,7 +167,7 @@ class RetentionLevel():
                     self.cycle_num, self.level, self.cycle_index
                 )
             )
-            return RetentionSlot(0, 0, 0)
+            return RetentionSlot(0, 0, 0, 0)
 
     def pull_from_lower_level(self):
         if self.in_cycle:
@@ -207,30 +207,38 @@ class RetentionLevel():
             )
             self.logger.log2(f"  Get next slot for level {self.level} (index {next_index}).")
             ds = self.slot_pool.get_next_slot()
-            self.slots[next_index] = RetentionSlot(ds.slot_num, ds.use_count + 1, self.cycle_date)
+            self.slots[next_index] = RetentionSlot(ds.slot_num, ds.use_count + 1, self.cycle_num, self.cycle_date)
 
 
-    def csv_head(self):
+    def csv_header(self):
         s = ''
         for i in range(self.num_slots):
-            s += f",Level {self.level}.{i}"
+            s += f",\"Level {self.level}.{i}\""
         return s
 
-    def csv_data(self):
+    def csv_all_slots(self, include_date=False):
         s = ''
         for i in range(self.num_slots):
             if self.slots[i].slot_num == 0:
                 s += ','
             else:
-                s +=  f",\"{to_alpha_label(self.slots[i].slot_num)} ({self.slots[i].backup_date})\""
+                #s +=  f",\"{to_alpha_label(self.slots[i].slot_num)} ({self.slots[i].backup_date})\""
+                if include_date:
+                    s +=  f",\"{to_alpha_label(self.slots[i].slot_num)}-{self.slots[i].use_count} ({self.slots[i].backup_date})\""
+                else:
+                    s +=  f",\"{to_alpha_label(self.slots[i].slot_num)}-{self.slots[i].use_count}\""
         return s
 
-    def csv_diff(self):
+    def csv_changed_slots(self, include_date=False):
+        # Return data only for slots that changed from the previous cycle.
         s = ''
         for i in range(self.num_slots):
             s += ","
             if self.slots[i] != self.prevs[i]:
-                s +=  f"\"{to_alpha_label(self.slots[i].slot_num)} ({self.slots[i].backup_date})\""
+                if include_date:
+                    s +=  f"\"{to_alpha_label(self.slots[i].slot_num)}-{self.slots[i].use_count} ({self.slots[i].backup_date})\""
+                else:
+                    s +=  f"\"{to_alpha_label(self.slots[i].slot_num)}-{self.slots[i].use_count}\""
         return s
 
     def get_slots_in_use(self):
