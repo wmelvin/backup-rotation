@@ -7,6 +7,8 @@
 #   Using 'retention' instead of 'rotation', 'slot' instead of 'drive'.
 #
 # 2020-09-06: Refactor logging.
+#
+# 2020-09-08: More tweaks and refactoring.
 #   
 #
 #----------------------------------------------------------------------
@@ -179,7 +181,11 @@ class RetentionLevel():
             pulled = self.level_below.pull_slot()
             if 0 < pulled.slot_num:
                 self.free_slot()
-                self.logger.log2(f"  Move slot {slot_label(pulled.slot_num)} to level {self.level} (index {self.cycle_index}).")
+                self.logger.log2(
+                    "  Move slot {0} to level {1} (index {2}).".format(
+                        slot_label(pulled.slot_num), self.level, self.cycle_index
+                    )
+                )
                 self.slots[self.cycle_index] = pulled
 
     def free_slot(self):
@@ -200,48 +206,74 @@ class RetentionLevel():
                 next_index = self.cycle_index
             else:
                 next_index = self.free_index
+            
             self.logger.log(
                 "Cycle {0}, Level {1}, Index {2}: next_slot".format(
                     self.cycle_num, self.level, next_index
                 )
             )
             self.logger.log2(f"  Get next slot for level {self.level} (index {next_index}).")
+
             ds = self.slot_pool.get_next_slot()
-            self.slots[next_index] = RetentionSlot(ds.slot_num, ds.use_count + 1, self.cycle_num, self.cycle_date)
+            self.slots[next_index] = RetentionSlot(
+                ds.slot_num, 
+                ds.use_count + 1, 
+                self.cycle_num, 
+                self.cycle_date
+            )
 
 
-    def csv_header(self):
+    def csvfrag_header(self):
+        # CSV header row fragment for this level.
         s = ''
         for i in range(self.num_slots):
             s += f",\"Level {self.level}.{i}\""
         return s
 
-    def csv_all_slots(self, include_date=False):
+    def csvfrag_all_slots(self, include_date=False):
+        # CSV fragment with data from all slots.
         s = ''
         for i in range(self.num_slots):
             if self.slots[i].slot_num == 0:
                 s += ','
             else:
-                #s +=  f",\"{to_alpha_label(self.slots[i].slot_num)} ({self.slots[i].backup_date})\""
                 if include_date:
-                    s +=  f",\"{to_alpha_label(self.slots[i].slot_num)}-{self.slots[i].use_count} ({self.slots[i].backup_date})\""
+                    s +=  '"{0}-{1} ({2})"'.format(
+                        to_alpha_label(self.slots[i].slot_num),
+                        self.slots[i].use_count,
+                        self.slots[i].backup_date
+                    )
                 else:
-                    s +=  f",\"{to_alpha_label(self.slots[i].slot_num)}-{self.slots[i].use_count}\""
+                    s +=  '"{0}-{1}"'.format(
+                        to_alpha_label(self.slots[i].slot_num),
+                        self.slots[i].use_count
+                    )
         return s
 
-    def csv_changed_slots(self, include_date=False):
-        # Return data only for slots that changed from the previous cycle.
+    def csvfrag_changed_slots(self, include_date=False):
+        # CSV fragment with data from only slots that changed from the previous cycle.
         s = ''
         for i in range(self.num_slots):
             s += ","
             if self.slots[i] != self.prevs[i]:
                 if include_date:
-                    s +=  f"\"{to_alpha_label(self.slots[i].slot_num)}-{self.slots[i].use_count} ({self.slots[i].backup_date})\""
+                    #s +=  f"\"{to_alpha_label(self.slots[i].slot_num)}-{self.slots[i].use_count} ({self.slots[i].backup_date})\""
+                    s +=  '"{0}-{1} ({2})"'.format(
+                        to_alpha_label(self.slots[i].slot_num),
+                        self.slots[i].use_count,
+                        self.slots[i].backup_date
+                    )
                 else:
-                    s +=  f"\"{to_alpha_label(self.slots[i].slot_num)}-{self.slots[i].use_count}\""
+                    #s +=  f"\"{to_alpha_label(self.slots[i].slot_num)}-{self.slots[i].use_count}\""
+                    s +=  '"{0}-{1}"'.format(
+                        to_alpha_label(self.slots[i].slot_num),
+                        self.slots[i].use_count
+                    )
         return s
 
     def get_slots_in_use(self):
+        # Returns a list of tuples with data from all slots currently in use.
+        # Call on highest level to return the list including all lower levels.
         slots_list = []
         for x in range(self.num_slots):
             if 0 < self.slots[x].slot_num:

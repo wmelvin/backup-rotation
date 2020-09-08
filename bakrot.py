@@ -20,9 +20,9 @@ def get_levels_info_str(prefix, levels_list, suffix, do_diff):
     s = f"{prefix}"
     for x in range(len(levels)):
         if do_diff:
-            s += f"{levels_list[x].csv_changed_slots()},"
+            s += f"{levels_list[x].csvfrag_changed_slots()},"
         else:
-            s += f"{levels_list[x].csv_all_slots()},"
+            s += f"{levels_list[x].csvfrag_all_slots()},"
     s += f",\"{suffix}\"\n"
     return s
 
@@ -143,7 +143,7 @@ if do_run_main:
 
     header_csv = '"cycle","date"'
     for x in range(len(levels)):
-        header_csv += f"{levels[x].csv_header()},."
+        header_csv += f"{levels[x].csvfrag_header()},."
     header_csv += f",\"Notes\"\n"
 
     out_list += header_csv
@@ -176,10 +176,12 @@ if do_run_main:
         out_list += get_levels_info_str(info_prefix, levels, "", True)
 
 
+    print(f"Writing {filename_output_main}")
     with open(filename_output_main, 'w') as out_file:
         out_file.writelines(out_list)
 
 
+    print(f"Writing {filename_output_data}")
     with open(filename_output_data, 'w') as out_file:
         out_file.writelines(out_list2)
 
@@ -194,6 +196,7 @@ if do_run_main:
     all_dates.sort()
 
 
+    print(f"Writing {filename_output_cycles}")
     with open(filename_output_cycles, 'w') as out_file:
         for d in all_dates:
             s = d
@@ -208,7 +211,7 @@ if do_run_main:
                 s += slot
             out_file.write(f"{s}\n")
 
-
+print(f"Writing {filename_output_usage}")
 with open(filename_output_usage, 'w') as out_file:
     out_file.write(f"Level,Slot,UseCount\n")
     for x in range(len(levels)):
@@ -224,4 +227,4 @@ if dbg_list_levels:
     for x in range(len(levels)):
         levels[x].list_slots()
 
-
+print('Done.')
