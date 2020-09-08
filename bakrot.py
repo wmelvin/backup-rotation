@@ -16,13 +16,13 @@ from backup_retention import SlotPool, RetentionLevel, to_alpha_label
 from plogger import Plogger
 
 
-def get_levels_info_str(prefix, levels_list, suffix, do_diff):
+def get_levels_as_csv(prefix, levels_list, suffix, do_diff, do_dates):
     s = f"{prefix}"
     for x in range(len(levels)):
         if do_diff:
-            s += f"{levels_list[x].csvfrag_changed_slots()},"
+            s += f"{levels_list[x].csvfrag_changed_slots(do_dates)},"
         else:
-            s += f"{levels_list[x].csvfrag_all_slots()},"
+            s += f"{levels_list[x].csvfrag_all_slots(do_dates)},"
     s += f",\"{suffix}\"\n"
     return s
 
@@ -42,7 +42,8 @@ backup_scheme = 4
 
 
 filename_output_main = f"output-bakrot-{backup_scheme}{output_suffix}.csv"
-filename_output_data = f"output-bakrot-{backup_scheme}{output_suffix}-detail.csv"
+filename_output_wdates = f"output-bakrot-{backup_scheme}{output_suffix}-wdates.csv"
+filename_output_detail = f"output-bakrot-{backup_scheme}{output_suffix}-detail.csv"
 filename_output_cycles = f"output-bakrot-{backup_scheme}{output_suffix}-cycles.csv"
 filename_output_usage = f"output-bakrot-{backup_scheme}{output_suffix}-usage.csv"
 filename_output_steps = f"output-bakrot-{backup_scheme}{output_suffix}-steps.txt"
@@ -139,16 +140,17 @@ plog.log2(f"\nCycles ({n_weeks}):\n")
 
 if do_run_main:
     all_cycles = []
-    out_list = []
+    outlist_main = []
 
     header_csv = '"cycle","date"'
     for x in range(len(levels)):
         header_csv += f"{levels[x].csvfrag_header()},."
     header_csv += f",\"Notes\"\n"
 
-    out_list += header_csv
+    outlist_main += header_csv
 
-    out_list2 = out_list.copy()
+    outlist_wdates = outlist_main.copy()
+    outlist_detail = outlist_main.copy()
 
     for week_num in range(n_weeks):
         week_date = start_date + timedelta(weeks=week_num)
@@ -165,26 +167,30 @@ if do_run_main:
 
         l1.free_slot()
 
-        out_list2 += get_levels_info_str(info_prefix, levels, "before next slot", False)
+        outlist_detail += get_levels_as_csv(info_prefix, levels, "before next slot", False, True)
 
         l1.next_slot()
 
         all_cycles.append(levels[top_index].get_slots_in_use())
 
-        out_list2 += get_levels_info_str(info_prefix, levels, "after next slot", False)
+        outlist_detail += get_levels_as_csv(info_prefix, levels, "after next slot", False, True)
 
-        out_list += get_levels_info_str(info_prefix, levels, "", True)
+        outlist_main += get_levels_as_csv(info_prefix, levels, "", True, False)
+        
+        outlist_wdates += get_levels_as_csv(info_prefix, levels, "", True, True)
 
 
     print(f"Writing {filename_output_main}")
     with open(filename_output_main, 'w') as out_file:
-        out_file.writelines(out_list)
+        out_file.writelines(outlist_main)
 
+    print(f"Writing {filename_output_wdates}")
+    with open(filename_output_wdates, 'w') as out_file:
+        out_file.writelines(outlist_wdates)
 
-    print(f"Writing {filename_output_data}")
-    with open(filename_output_data, 'w') as out_file:
-        out_file.writelines(out_list2)
-
+    print(f"Writing {filename_output_detail}")
+    with open(filename_output_detail, 'w') as out_file:
+        out_file.writelines(outlist_detail)
 
     all_dates = []
     for cycle in all_cycles:
