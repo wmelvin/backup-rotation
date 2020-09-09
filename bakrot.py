@@ -16,16 +16,29 @@ from backup_retention import SlotPool, RetentionLevel, to_alpha_label
 from plogger import Plogger
 
 
-def get_levels_as_csv(prefix, levels_list, suffix, do_diff, do_dates):
+def get_levels_as_csv(prefix, levels_list, add_notes, do_diff, do_dates):
     s = f"{prefix}"
-    a = ''
+
+    actions = []
     for x in range(len(levels)):
         if do_diff:
             s += f"{levels_list[x].csvfrag_changed_slots(do_dates)},"
-            a += levels_list[x].cycle_actions
         else:
             s += f"{levels_list[x].csvfrag_all_slots(do_dates)},"
-    s += f",\"{suffix}\",\"{a}\"\n"
+
+        for a in levels_list[x].cycle_actions:
+            actions.append(a)
+
+    b = ''
+    for i in range(len(actions)-1, -1, -1):
+        b += f"{actions[i]} "
+
+    #s += f",\"{add_notes}\",\"{b.strip()}\"\n"
+    s += ',"{0}","{1}"{2}'.format(
+        b.strip(),
+        add_notes,
+        "\n"
+    )
     return s
 
 
@@ -147,7 +160,8 @@ if do_run_main:
     header_csv = '"cycle","date"'
     for x in range(len(levels)):
         header_csv += f"{levels[x].csvfrag_header()},."
-    header_csv += f",\"Notes\"\n"
+    #header_csv += f",\"Notes\",\"Actions\"\n"
+    header_csv += ',"Actions", "Notes"{0}'.format("\n")
 
     outlist_main += header_csv
 
