@@ -18,12 +18,14 @@ from plogger import Plogger
 
 def get_levels_as_csv(prefix, levels_list, suffix, do_diff, do_dates):
     s = f"{prefix}"
+    a = ''
     for x in range(len(levels)):
         if do_diff:
             s += f"{levels_list[x].csvfrag_changed_slots(do_dates)},"
+            a += levels_list[x].cycle_actions
         else:
             s += f"{levels_list[x].csvfrag_all_slots(do_dates)},"
-    s += f",\"{suffix}\"\n"
+    s += f",\"{suffix}\",\"{a}\"\n"
     return s
 
 

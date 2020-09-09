@@ -93,6 +93,7 @@ class RetentionLevel():
         self.cycle_index = -1
         self.free_index = -1
         self.in_cycle = False
+        self.cycle_actions = ''
         self.slots = [RetentionSlot(0, 0, 0, 0) for x in range(num_slots)]
         self.prevs =  [RetentionSlot(0, 0, 0, 0) for x in range(num_slots)]
 
@@ -111,6 +112,7 @@ class RetentionLevel():
 
         self.cycle_index = (self.usage_cycle(cycle_num) % self.num_slots)
         self.free_index = -1
+        self.cycle_actions = ''
 
         self.prevs = [self.slots[x] for x in range(self.num_slots)]
 
@@ -186,6 +188,11 @@ class RetentionLevel():
                         slot_label(pulled.slot_num), self.level, self.cycle_index
                     )
                 )
+                self.cycle_actions += "Move slot {0} from level {1} to level {2}. ".format(
+                    slot_label(pulled.slot_num), 
+                    self.level_below.level,
+                    self.level
+                )
                 self.slots[self.cycle_index] = pulled
 
     def free_slot(self):
@@ -215,11 +222,22 @@ class RetentionLevel():
             self.logger.log2(f"  Get next slot for level {self.level} (index {next_index}).")
 
             ds = self.slot_pool.get_next_slot()
+
             self.slots[next_index] = RetentionSlot(
                 ds.slot_num, 
                 ds.use_count + 1, 
                 self.cycle_num, 
                 self.cycle_date
+            )
+            
+            if self.slots[next_index].use_count == 1:
+                act = 'New'
+            else:
+                act = 'Reuse'
+            self.cycle_actions += "{0} slot {1} in level {2}. ".format(
+                act, 
+                slot_label(self.slots[next_index].slot_num),
+                self.level
             )
 
 
