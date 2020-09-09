@@ -93,7 +93,7 @@ class RetentionLevel():
         self.cycle_index = -1
         self.free_index = -1
         self.in_cycle = False
-        self.cycle_actions = ''
+        self.cycle_actions = []
         self.slots = [RetentionSlot(0, 0, 0, 0) for x in range(num_slots)]
         self.prevs =  [RetentionSlot(0, 0, 0, 0) for x in range(num_slots)]
 
@@ -112,7 +112,7 @@ class RetentionLevel():
 
         self.cycle_index = (self.usage_cycle(cycle_num) % self.num_slots)
         self.free_index = -1
-        self.cycle_actions = ''
+        self.cycle_actions.clear()
 
         self.prevs = [self.slots[x] for x in range(self.num_slots)]
 
@@ -188,10 +188,12 @@ class RetentionLevel():
                         slot_label(pulled.slot_num), self.level, self.cycle_index
                     )
                 )
-                self.cycle_actions += "Move slot {0} from level {1} to level {2}. ".format(
-                    slot_label(pulled.slot_num), 
-                    self.level_below.level,
-                    self.level
+                self.cycle_actions.append(
+                    "Move {0} from level {1} to {2}.".format(
+                        slot_label(pulled.slot_num), 
+                        self.level_below.level,
+                        self.level
+                    )
                 )
                 self.slots[self.cycle_index] = pulled
 
@@ -234,10 +236,12 @@ class RetentionLevel():
                 act = 'New'
             else:
                 act = 'Reuse'
-            self.cycle_actions += "{0} slot {1} in level {2}. ".format(
-                act, 
-                slot_label(self.slots[next_index].slot_num),
-                self.level
+            self.cycle_actions.append(
+                "{0} {1} in level {2}.".format(
+                    act, 
+                    slot_label(self.slots[next_index].slot_num),
+                    self.level
+                )
             )
 
 
@@ -256,13 +260,13 @@ class RetentionLevel():
                 s += ','
             else:
                 if include_date:
-                    s +=  '"{0}-{1} ({2})"'.format(
+                    s +=  ',"{0}-{1} ({2})"'.format(
                         to_alpha_label(self.slots[i].slot_num),
                         self.slots[i].use_count,
                         self.slots[i].backup_date
                     )
                 else:
-                    s +=  '"{0}-{1}"'.format(
+                    s +=  ',"{0}-{1}"'.format(
                         to_alpha_label(self.slots[i].slot_num),
                         self.slots[i].use_count
                     )
