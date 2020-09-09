@@ -5,7 +5,7 @@
 #
 # Backup roation calculator.
 #
-# 2020-09-06 
+# 2020-09-09 
 #
 #----------------------------------------------------------------------
 
@@ -15,11 +15,15 @@ from backup_retention import SlotPool, RetentionLevel, to_alpha_label
 
 from plogger import Plogger
 
+app_version = '200909.1'
+
+app_label = f"bakrot.py version {app_version}"
+
 
 def get_levels_as_csv(prefix, levels_list, add_notes, do_diff, do_dates):
     s = f"{prefix}"
 
-    actions = []
+    actions_list = []
     for x in range(len(levels)):
         if do_diff:
             s += f"{levels_list[x].csvfrag_changed_slots(do_dates)},"
@@ -27,18 +31,16 @@ def get_levels_as_csv(prefix, levels_list, add_notes, do_diff, do_dates):
             s += f"{levels_list[x].csvfrag_all_slots(do_dates)},"
 
         for a in levels_list[x].cycle_actions:
-            actions.append(a)
+            actions_list.append(a)
 
-    b = ''
-    for i in range(len(actions)-1, -1, -1):
-        b += f"{actions[i]} "
+    actions_str = ''
+    actions_list.reverse()
+    for action in actions_list:
+        actions_str += f"{action} "
+    # for i in range(len(actions)-1, -1, -1):
+    #     b += f"{actions[i]} "
 
-    #s += f",\"{add_notes}\",\"{b.strip()}\"\n"
-    s += ',"{0}","{1}"{2}'.format(
-        b.strip(),
-        add_notes,
-        "\n"
-    )
+    s += ',"{0}","{1}"{2}'.format(actions_str.strip(), add_notes, "\n")
     return s
 
 
@@ -48,23 +50,24 @@ def get_levels_as_csv(prefix, levels_list, add_notes, do_diff, do_dates):
 run_at = datetime.now()
 
 #-- Include date_time suffix, or not:
-#output_suffix = f"-{run_at.strftime('%Y%m%d_%H%M%S')}"
-output_suffix = ''
+output_suffix = f"-{run_at.strftime('%Y%m%d_%H%M%S')}"
+#output_suffix = ''
 
 
 #-- Set scheme here:
 backup_scheme = 4
 
 
-filename_output_main = f"output-bakrot-{backup_scheme}{output_suffix}.csv"
-filename_output_wdates = f"output-bakrot-{backup_scheme}{output_suffix}-wdates.csv"
-filename_output_detail = f"output-bakrot-{backup_scheme}{output_suffix}-detail.csv"
-filename_output_cycles = f"output-bakrot-{backup_scheme}{output_suffix}-cycles.csv"
-filename_output_usage = f"output-bakrot-{backup_scheme}{output_suffix}-usage.csv"
-filename_output_steps = f"output-bakrot-{backup_scheme}{output_suffix}-steps.txt"
+filename_output_main = f"output-bakrot-{backup_scheme}{output_suffix}-1.csv"
+filename_output_wdates = f"output-bakrot-{backup_scheme}{output_suffix}-2-wdates.csv"
+filename_output_detail = f"output-bakrot-{backup_scheme}{output_suffix}-3-detail.csv"
+filename_output_cycles = f"output-bakrot-{backup_scheme}{output_suffix}-4-cycles.csv"
+filename_output_usage = f"output-bakrot-{backup_scheme}{output_suffix}-5-usage.csv"
+filename_output_steps = f"output-bakrot-{backup_scheme}{output_suffix}-6-steps.txt"
 
 plog = Plogger('bakrot_log.txt', filename_output_steps)
 
+plog.log2(f"{app_label}\n")
 plog.log2(f"Run started at {run_at.strftime('%Y-%m-%d %H:%M:%S')}")
 
 start_date = date(2020,7,4)
@@ -160,7 +163,6 @@ if do_run_main:
     header_csv = '"cycle","date"'
     for x in range(len(levels)):
         header_csv += f"{levels[x].csvfrag_header()},."
-    #header_csv += f",\"Notes\",\"Actions\"\n"
     header_csv += ',"Actions", "Notes"{0}'.format("\n")
 
     outlist_main += header_csv
@@ -171,7 +173,7 @@ if do_run_main:
     for week_num in range(n_weeks):
         week_date = start_date + timedelta(weeks=week_num)
 
-        plog.log2(f"Week of {week_date:%Y-%m-%d}")
+        plog.log2(f"Cycle {week_num} (week of {week_date:%Y-%m-%d}):")
 
         info_prefix = f"{week_num},{week_date}"
 

@@ -157,6 +157,11 @@ class RetentionLevel():
     def pull_slot(self):
         if self.level_is_full():
             slot_index = self.oldest_backup_index()
+            
+            # *!* Seems like getting the oldest backup index might not be necessary.
+            # Is it always the same as cycle_index?
+            assert self.cycle_index == slot_index
+
             ds = self.slots[slot_index]        
             self.mark_free(slot_index)
             self.logger.log(
@@ -189,10 +194,12 @@ class RetentionLevel():
                     )
                 )
                 self.cycle_actions.append(
-                    "Move {0} from level {1} to {2}.".format(
+                    "Move {0} from level {1}.{2} to {3}.{4}.".format(
                         slot_label(pulled.slot_num), 
                         self.level_below.level,
-                        self.level
+                        self.level_below.cycle_index,
+                        self.level,
+                        self.cycle_index
                     )
                 )
                 self.slots[self.cycle_index] = pulled
@@ -237,10 +244,11 @@ class RetentionLevel():
             else:
                 act = 'Reuse'
             self.cycle_actions.append(
-                "{0} {1} in level {2}.".format(
+                "{0} {1} in level {2}.{3}.".format(
                     act, 
                     slot_label(self.slots[next_index].slot_num),
-                    self.level
+                    self.level,
+                    next_index
                 )
             )
 
