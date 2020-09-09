@@ -89,8 +89,8 @@ if backup_scheme == 0:
 elif backup_scheme == 1:
     l1 = RetentionLevel(1, 7,  1, pool, None, plog)
     l2 = RetentionLevel(2, 5,  2, pool, l1, plog)
-    l3 = RetentionLevel(3, 3,  4, pool, l2, plog)
-    l4 = RetentionLevel(4, 4, 12, pool, l3, plog)    
+    l3 = RetentionLevel(3, 4,  4, pool, l2, plog)
+    l4 = RetentionLevel(4, 3, 12, pool, l3, plog)    
     # total slots         19
     levels = [l1, l2, l3, l4]
 
@@ -105,20 +105,20 @@ elif backup_scheme == 2:
 
 elif backup_scheme == 3:
     l1 = RetentionLevel(1, 7,  1, pool, None, plog)
-    l2 = RetentionLevel(2, 3,  2, pool, l1, plog)
+    l2 = RetentionLevel(2, 4,  2, pool, l1, plog)
     l3 = RetentionLevel(3, 4,  4, pool, l2, plog)
     l4 = RetentionLevel(4, 2,  8, pool, l3, plog)
     l5 = RetentionLevel(5, 2, 12, pool, l4, plog)
-    # total slots         18
+    # total slots         19
     levels = [l1, l2, l3, l4, l5]
 
 else:
     #-- Scheme 4
-    l1 = RetentionLevel(1, 7,  1, pool, None, plog)
-    l2 = RetentionLevel(2, 5,  2, pool, l1, plog)
+    l1 = RetentionLevel(1, 5,  1, pool, None, plog)
+    l2 = RetentionLevel(2, 4,  2, pool, l1, plog)
     l3 = RetentionLevel(3, 4,  4, pool, l2, plog)
-    l4 = RetentionLevel(4, 3, 12, pool, l3, plog)
-    # total slots         19
+    l4 = RetentionLevel(4, 2, 12, pool, l3, plog)
+    # total slots         15
     levels = [l1, l2, l3, l4]
 
 top_index = len(levels)-1
@@ -225,14 +225,20 @@ if do_run_main:
         for d in all_dates:
             s = d
             for cycle in all_cycles:
-                slot = ','
+                slot_str = ','
                 for item in cycle:
                     item_date = item[0].strftime('%Y-%m-%d')
                     if item_date == d:
-                        slot = to_alpha_label(item[1])
-                        slot = f",\"{slot} U{item[2]} L{item[3]}\""
+                        # slot = to_alpha_label(item[1])
+                        # slot = f",\"{slot} U{item[2]} L{item[3]}\""
+                        slot_str = ',"{0} U{1} L{2}.{3}"'.format(
+                            to_alpha_label(item[1]),
+                            item[2],
+                            item[3],
+                            item[4]
+                        )
                         break
-                s += slot
+                s += slot_str
             out_file.write(f"{s}\n")
 
 print(f"Writing {filename_output_usage}")
