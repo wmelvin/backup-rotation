@@ -303,14 +303,33 @@ class RetentionLevel():
 
     def get_slots_in_use(self):
         # Returns a list of tuples with data from all slots currently in use.
+        # The list is sorted by backup_date.
+        #
         # Call on highest level to return the list including all lower levels.
+        #
+        # Each tuple contains:
+        #   0: backup_date
+        #   1: slot_num
+        #   2: use_count
+        #   3: level
+        #   4: slot index
+        #
         slots_list = []
+
         for x in range(self.num_slots):
             if 0 < self.slots[x].slot_num:
-                t = (self.slots[x].backup_date, self.slots[x].slot_num, self.slots[x].use_count, self.level)
+                t = (
+                    self.slots[x].backup_date, 
+                    self.slots[x].slot_num, 
+                    self.slots[x].use_count, 
+                    self.level, 
+                    x
+                )
                 slots_list.append(t)
+
         if not self.level_below is None:
             in_use_below = self.level_below.get_slots_in_use()
             for x in range(len(in_use_below)):
                 slots_list.append(in_use_below[x])
+
         return sorted(slots_list)

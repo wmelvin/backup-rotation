@@ -44,27 +44,43 @@ def get_levels_as_csv(prefix, levels_list, add_notes, do_diff, do_dates):
     return s
 
 
+def get_cycle_first_last_date(cycle):
+    first_date = date.max
+    last_date = date.min
+    for item in cycle:
+        item_backup_date = item[0]
+        if item_backup_date < first_date:
+            first_date = item_backup_date
+        if item_backup_date > last_date:
+            last_date = item_backup_date
+    return first_date, last_date
+
+
+
+
+
+
 #----------------------------------------------------------------------
 # Main script:
 
 run_at = datetime.now()
 
 #-- Include date_time suffix, or not:
-#output_suffix = f"-{run_at.strftime('%Y%m%d_%H%M%S')}"
-output_suffix = ''
+output_suffix = f"-{run_at.strftime('%Y%m%d_%H%M%S')}"
+#output_suffix = ''
 
 
 #-- Set scheme here:
-backup_scheme = 2
-
+backup_scheme = 4
 
 filename_output_main = f"output-bakrot-{backup_scheme}{output_suffix}-1.csv"
 filename_output_wdates = f"output-bakrot-{backup_scheme}{output_suffix}-2-wdates.csv"
 filename_output_detail = f"output-bakrot-{backup_scheme}{output_suffix}-3-detail.csv"
 filename_output_cycles = f"output-bakrot-{backup_scheme}{output_suffix}-4-cycles.csv"
 filename_output_usage = f"output-bakrot-{backup_scheme}{output_suffix}-5-usage.csv"
-filename_output_steps = f"output-bakrot-{backup_scheme}{output_suffix}-6-steps.txt"
-filename_output_summary = f"output-bakrot-{backup_scheme}{output_suffix}-7-summary.txt"
+filename_output_range = f"output-bakrot-{backup_scheme}{output_suffix}-6-range.csv"
+filename_output_steps = f"output-bakrot-{backup_scheme}{output_suffix}-7-steps.txt"
+filename_output_summary = f"output-bakrot-{backup_scheme}{output_suffix}-8-summary.txt"
 
 plog = Plogger('bakrot_log.txt', filename_output_steps)
 
@@ -73,24 +89,22 @@ plog.log2(f"Run started at {run_at.strftime('%Y-%m-%d %H:%M:%S')}")
 
 start_date = date(2020,7,4)
 
-# Cycles are weeks in this insance.
-#
+#-- Cycles are weeks in this insance.
 n_weeks = 52 * 4
 
 pool = SlotPool(plog)
 
 if backup_scheme == 0:
     l1 = RetentionLevel(1, 5, 1, pool, None, plog)
-    l2 = RetentionLevel(2, 3, 2, pool, l1, plog)
-    l3 = RetentionLevel(3, 6, 4, pool, l2, plog)
+    l2 = RetentionLevel(2, 4, 2, pool, l1, plog)
+    l3 = RetentionLevel(3,10, 4, pool, l2, plog)
     levels = [l1, l2, l3]
 
 elif backup_scheme == 1:
-    l1 = RetentionLevel(1, 7,  1, pool, None, plog)
-    l2 = RetentionLevel(2, 5,  2, pool, l1, plog)
-    l3 = RetentionLevel(3, 4,  4, pool, l2, plog)
-    l4 = RetentionLevel(4, 3, 12, pool, l3, plog)    
-    levels = [l1, l2, l3, l4]
+    l1 = RetentionLevel(1,  7,  1, pool, None, plog)
+    l2 = RetentionLevel(2,  4,  2, pool, l1, plog)
+    l3 = RetentionLevel(3, 10,  4, pool, l2, plog)
+    levels = [l1, l2, l3]
 
 elif backup_scheme == 2:
     l1 = RetentionLevel(1, 7,  1, pool, None, plog)
@@ -117,6 +131,10 @@ else:
     levels = [l1, l2, l3, l4]
 
 top_index = len(levels)-1
+
+total_slots = 0
+for x in range(len(levels)):
+    total_slots += levels[x].num_slots
 
 plog.log2(f"\nLevels:\n")
 for x in range(len(levels)):
@@ -205,6 +223,35 @@ if do_run_main:
     with open(filename_output_detail, 'w') as out_file:
         out_file.writelines(outlist_detail)
 
+
+    print(f"Writing {filename_output_range}")
+    min_days = 0
+    max_days = 0
+    with open(filename_output_range, 'w') as out_file:
+        out_file.write(f"Cycle,FirstDate,LastDate,Days\n")
+        n = 0
+        for cycle in all_cycles:
+            first_date, last_date = get_cycle_first_last_date(cycle)
+            days_between = (last_date - first_date).days
+            out_file.write(
+                '{0},{1},{2},{3}{4}'.format(
+                    n, 
+                    first_date.strftime('%Y-%m-%d'), 
+                    last_date.strftime('%Y-%m-%d'), 
+                    days_between,
+                    "\n"
+                )
+            )
+            # If all slots were full then use for min and max days range.
+            # This is reported in the summary file.
+            if len(cycle) == total_slots:
+                if (days_between < min_days) or (min_days == 0):
+                    min_days = days_between
+                if (days_between > max_days):
+                    max_days = days_between
+            n += 1
+
+
     all_dates = []
     for cycle in all_cycles:
         for item in cycle:
@@ -213,7 +260,6 @@ if do_run_main:
                 all_dates.append(item_date)
 
     all_dates.sort()
-
 
     print(f"Writing {filename_output_cycles}")
     with open(filename_output_cycles, 'w') as out_file:
@@ -247,18 +293,16 @@ with open(filename_output_usage, 'w') as out_file:
 
 
 print(f"Writing {filename_output_summary}")
-d1 = date.max
-d2 = date.min
-total_slots = 0
-for x in range(len(levels)):
-    total_slots += levels[x].num_slots
-    for y in range(levels[x].num_slots):
-        if levels[x].slots[y].backup_date < d1:
-            d1 = levels[x].slots[y].backup_date
-        if levels[x].slots[y].backup_date > d2:
-            d2 = levels[x].slots[y].backup_date
-
-days_range = (d2 - d1).days
+# d1 = date.max
+# d2 = date.min
+# for x in range(len(levels)):
+    # for y in range(levels[x].num_slots):
+        # if levels[x].slots[y].backup_date < d1:
+            # d1 = levels[x].slots[y].backup_date
+        # if levels[x].slots[y].backup_date > d2:
+            # d2 = levels[x].slots[y].backup_date
+# 
+# days_range = (d2 - d1).days
 
 with open(filename_output_summary, 'w') as out_file:
     out_file.write(f"{app_label}\n")
@@ -275,7 +319,10 @@ with open(filename_output_summary, 'w') as out_file:
             )
         )
     out_file.write(f"\nTotal media slots: {total_slots}\n")
-    out_file.write(f"\nDays from oldest to newest backup at last cycle: {days_range}")
+    #out_file.write(f"\nDays from oldest to newest backup at last cycle: {days_range}")
+    out_file.write(f"\nDays from oldest to newest backup (after all slots full):\n")
+    out_file.write(f"  Minimum days = {min_days}\n")
+    out_file.write(f"  Maximum days = {max_days}\n")
 
 
 if dbg_list_levels:
