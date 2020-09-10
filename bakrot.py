@@ -5,7 +5,7 @@
 #
 # Backup roation calculator.
 #
-# 2020-09-09 
+# 2020-09-10 
 #
 #----------------------------------------------------------------------
 
@@ -15,7 +15,7 @@ from backup_retention import SlotPool, RetentionLevel, to_alpha_label
 
 from plogger import Plogger
 
-app_version = '200909.1'
+app_version = '20200910.1'
 
 app_label = f"bakrot.py version {app_version}"
 
@@ -24,6 +24,7 @@ def get_levels_as_csv(prefix, levels_list, add_notes, do_diff, do_dates):
     s = f"{prefix}"
 
     actions_list = []
+
     for x in range(len(levels)):
         if do_diff:
             s += f"{levels_list[x].csvfrag_changed_slots(do_dates)},"
@@ -33,12 +34,11 @@ def get_levels_as_csv(prefix, levels_list, add_notes, do_diff, do_dates):
         for a in levels_list[x].cycle_actions:
             actions_list.append(a)
 
-    actions_str = ''
     actions_list.reverse()
+
+    actions_str = ''
     for action in actions_list:
         actions_str += f"{action} "
-    # for i in range(len(actions)-1, -1, -1):
-    #     b += f"{actions[i]} "
 
     s += ',"{0}","{1}"{2}'.format(actions_str.strip(), add_notes, "\n")
     return s
@@ -54,10 +54,6 @@ def get_cycle_first_last_date(cycle):
         if item_backup_date > last_date:
             last_date = item_backup_date
     return first_date, last_date
-
-
-
-
 
 
 #----------------------------------------------------------------------
@@ -95,15 +91,15 @@ n_weeks = 52 * 4
 pool = SlotPool(plog)
 
 if backup_scheme == 0:
-    l1 = RetentionLevel(1, 5, 1, pool, None, plog)
-    l2 = RetentionLevel(2, 4, 2, pool, l1, plog)
-    l3 = RetentionLevel(3,10, 4, pool, l2, plog)
+    l1 = RetentionLevel(1,  5, 1, pool, None, plog)
+    l2 = RetentionLevel(2,  4, 2, pool, l1, plog)
+    l3 = RetentionLevel(3, 10, 4, pool, l2, plog)
     levels = [l1, l2, l3]
 
 elif backup_scheme == 1:
     l1 = RetentionLevel(1,  7,  1, pool, None, plog)
     l2 = RetentionLevel(2,  4,  2, pool, l1, plog)
-    l3 = RetentionLevel(3, 10,  4, pool, l2, plog)
+    l3 = RetentionLevel(3,  8,  6, pool, l2, plog)
     levels = [l1, l2, l3]
 
 elif backup_scheme == 2:
@@ -242,8 +238,8 @@ if do_run_main:
                     "\n"
                 )
             )
-            # If all slots were full then use for min and max days range.
-            # This is reported in the summary file.
+            # If all slots were full then include this cycle for min 
+            # and max days range. This is reported in the summary file.
             if len(cycle) == total_slots:
                 if (days_between < min_days) or (min_days == 0):
                     min_days = days_between
@@ -293,17 +289,6 @@ with open(filename_output_usage, 'w') as out_file:
 
 
 print(f"Writing {filename_output_summary}")
-# d1 = date.max
-# d2 = date.min
-# for x in range(len(levels)):
-    # for y in range(levels[x].num_slots):
-        # if levels[x].slots[y].backup_date < d1:
-            # d1 = levels[x].slots[y].backup_date
-        # if levels[x].slots[y].backup_date > d2:
-            # d2 = levels[x].slots[y].backup_date
-# 
-# days_range = (d2 - d1).days
-
 with open(filename_output_summary, 'w') as out_file:
     out_file.write(f"{app_label}\n")
     out_file.write(f"\nRun started at {run_at.strftime('%Y-%m-%d %H:%M:%S')}\n")
@@ -319,7 +304,6 @@ with open(filename_output_summary, 'w') as out_file:
             )
         )
     out_file.write(f"\nTotal media slots: {total_slots}\n")
-    #out_file.write(f"\nDays from oldest to newest backup at last cycle: {days_range}")
     out_file.write(f"\nDays from oldest to newest backup (after all slots full):\n")
     out_file.write(f"  Minimum days = {min_days}\n")
     out_file.write(f"  Maximum days = {max_days}\n")
