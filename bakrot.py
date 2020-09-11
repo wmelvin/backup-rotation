@@ -5,7 +5,7 @@
 #
 # Backup roation calculator.
 #
-# 2020-09-10 
+# 2020-09-11 
 #
 #----------------------------------------------------------------------
 
@@ -15,7 +15,7 @@ from backup_retention import SlotPool, RetentionLevel, to_alpha_label
 
 from plogger import Plogger
 
-app_version = '20200910.1'
+app_version = '20200911.1'
 
 app_label = f"bakrot.py version {app_version}"
 
@@ -83,10 +83,11 @@ plog = Plogger('bakrot_log.txt', filename_output_steps)
 plog.log2(f"{app_label}\n")
 plog.log2(f"Run started at {run_at.strftime('%Y-%m-%d %H:%M:%S')}")
 
-start_date = date(2020,7,4)
+start_date = date(2020, 7, 5)
 
 #-- Cycles are weeks in this insance.
-n_weeks = 52 * 4
+n_years = 5
+n_weeks = 52 * n_years
 
 pool = SlotPool(plog)
 
