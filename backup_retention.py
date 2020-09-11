@@ -200,7 +200,7 @@ class RetentionLevel():
                     )
                 )
                 self.cycle_actions.append(
-                    "Move {0} L_{1}.{2} to L_{3}.{4}.".format(
+                    "Move {0} L{1}.{2} to L{3}.{4}.".format(
                         slot_label(pulled.slot_num), 
                         self.level_below.level,
                         self.level_below.cycle_index,
@@ -250,7 +250,7 @@ class RetentionLevel():
             else:
                 act = 'Reuse'
             self.cycle_actions.append(
-                "{0} {1} in L_{2}.{3}.".format(
+                "{0} {1} in L{2}.{3}.".format(
                     act, 
                     slot_label(self.slots[next_index].slot_num),
                     self.level,
@@ -263,7 +263,7 @@ class RetentionLevel():
         # CSV header row fragment for this level.
         s = ''
         for i in range(self.num_slots):
-            s += f",\"L_{self.level}.{i}\""
+            s += f",\"L{self.level}.{i}\""
         return s
 
     def csvfrag_all_slots(self, include_date=False):
