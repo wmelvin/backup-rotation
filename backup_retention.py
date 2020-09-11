@@ -9,7 +9,10 @@
 # 2020-09-06: Refactor logging.
 #
 # 2020-09-08: More tweaks and refactoring.
-#   
+#
+# 2020-09-11: Shorten csv header labels and action text.
+#
+# 
 #
 #----------------------------------------------------------------------
 
@@ -17,9 +20,6 @@
 import collections
 import string
 from datetime import date
-
-
-#__all__ = ["to_alpha_label", "RetentionSlot", "SlotPool", "RetentionLevel"]
 
 
 def to_alpha_label(n):
@@ -44,10 +44,9 @@ def slot_label(n, show_number=False):
         return f"{to_alpha_label(n)}"
 
 
-
 # A RetentionSlot contains a set of one or more backup media (such 
 # as an external hard drive).
-
+#
 RetentionSlot = collections.namedtuple('RetentionSlot', 'slot_num, use_count, cycle_used, backup_date')
 
 
@@ -149,7 +148,14 @@ class RetentionLevel():
         return n
 
     def mark_free(self, index):
-        ds = self.slots[index]
+        ds = self.slots[index]        
+        # self.cycle_actions.append(
+        #     "Free {0} in L-{1}.{2}.".format(
+        #         slot_label(ds.slot_num), 
+        #         self.level,
+        #         index
+        #     )
+        # )
         self.logger.log2(f"  Free slot {slot_label(ds.slot_num)} in level {self.level} (index {index}).")
         self.slots[index] = RetentionSlot(ds.slot_num * -1, ds.use_count, ds.cycle_used, ds.backup_date)
         self.free_index = index
@@ -194,7 +200,7 @@ class RetentionLevel():
                     )
                 )
                 self.cycle_actions.append(
-                    "Move {0} from level {1}.{2} to {3}.{4}.".format(
+                    "Move {0} L_{1}.{2} to L_{3}.{4}.".format(
                         slot_label(pulled.slot_num), 
                         self.level_below.level,
                         self.level_below.cycle_index,
@@ -244,7 +250,7 @@ class RetentionLevel():
             else:
                 act = 'Reuse'
             self.cycle_actions.append(
-                "{0} {1} in level {2}.{3}.".format(
+                "{0} {1} in L_{2}.{3}.".format(
                     act, 
                     slot_label(self.slots[next_index].slot_num),
                     self.level,
@@ -257,7 +263,7 @@ class RetentionLevel():
         # CSV header row fragment for this level.
         s = ''
         for i in range(self.num_slots):
-            s += f",\"Level {self.level}.{i}\""
+            s += f",\"L_{self.level}.{i}\""
         return s
 
     def csvfrag_all_slots(self, include_date=False):
