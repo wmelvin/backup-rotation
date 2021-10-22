@@ -5,8 +5,6 @@
 #
 # Backup roation calculator.
 #
-# 2020-09-11 
-#
 # ---------------------------------------------------------------------
 
 from datetime import date, datetime, timedelta
@@ -16,7 +14,7 @@ from backup_retention import SlotPool, RetentionLevel, to_alpha_label
 from plogger import Plogger
 
 
-app_version = "20200911.1"
+app_version = "211022.1"
 
 app_label = f"bakrot.py version {app_version}"
 
@@ -70,28 +68,16 @@ output_suffix = f"-{run_at.strftime('%Y%m%d_%H%M%S')}"
 #  Set scheme here:
 backup_scheme = 4
 
-filename_output_main = f"output-bakrot-{backup_scheme}{output_suffix}-1.csv"
-filename_output_wdates = (
-    f"output-bakrot-{backup_scheme}{output_suffix}-2-wdates.csv"
-)
-filename_output_detail = (
-    f"output-bakrot-{backup_scheme}{output_suffix}-3-detail.csv"
-)
-filename_output_cycles = (
-    f"output-bakrot-{backup_scheme}{output_suffix}-4-cycles.csv"
-)
-filename_output_usage = (
-    f"output-bakrot-{backup_scheme}{output_suffix}-5-usage.csv"
-)
-filename_output_range = (
-    f"output-bakrot-{backup_scheme}{output_suffix}-6-range.csv"
-)
-filename_output_steps = (
-    f"output-bakrot-{backup_scheme}{output_suffix}-7-steps.txt"
-)
-filename_output_summary = (
-    f"output-bakrot-{backup_scheme}{output_suffix}-8-summary.txt"
-)
+filename_prefix = f"./output/output-bakrot-{backup_scheme}{output_suffix}"
+
+filename_output_main = f"{filename_prefix}-1.csv"
+filename_output_wdates = f"{filename_prefix}-2-wdates.csv"
+filename_output_detail = f"{filename_prefix}-3-detail.csv"
+filename_output_cycles = f"{filename_prefix}-4-cycles.csv"
+filename_output_usage = f"{filename_prefix}-5-usage.csv"
+filename_output_range = f"{filename_prefix}-6-range.csv"
+filename_output_steps = f"{filename_prefix}-7-steps.txt"
+filename_output_summary = f"{filename_prefix}-8-summary.txt"
 
 plog = Plogger("bakrot_log.txt", filename_output_steps)
 
