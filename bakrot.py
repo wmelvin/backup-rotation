@@ -60,24 +60,21 @@ def get_cycle_first_last_date(cycle):
 
 run_at = datetime.now()
 
-#  Include date_time suffix, or not:
-# output_suffix = f"-{run_at.strftime('%Y%m%d_%H%M%S')}"
-output_suffix = ''
-
-
 #  Set scheme here:
 backup_scheme = 4
 
 output_path = Path.cwd() / "output"
 assert output_path.exists()
 
-output_path = output_path / f"bakrot_{run_at.strftime('%Y%m%d_%H%M%S')}"
+output_path = output_path / "bakrot_{0}_{1}".format(
+    run_at.strftime("%Y%m%d_%H%M%S"), backup_scheme
+)
 assert not output_path.exists()
 
 output_path.mkdir()
 assert output_path.exists()
 
-filename_prefix = f"{str(output_path)}/bakrot-{backup_scheme}{output_suffix}"
+filename_prefix = f"{str(output_path)}/bakrot"
 
 filename_output_main = f"{filename_prefix}-1.csv"
 filename_output_wdates = f"{filename_prefix}-2-wdates.csv"
