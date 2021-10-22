@@ -7,6 +7,11 @@
 #
 # ---------------------------------------------------------------------
 
+import argparse
+import json
+
+import sys
+
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -56,18 +61,44 @@ def get_cycle_first_last_date(cycle):
 
 
 # ---------------------------------------------------------------------
-# Main script:
 
 
-def main(scheme):
+def get_scheme(file_name):
+    with open(file_name, "r") as f:
+        s = f.read()
+    data = json.loads(s)
+    scheme = data["rotation_scheme"]
+    return scheme["name"], scheme["levels"]
+
+
+def get_args(argv):
+    ap = argparse.ArgumentParser(
+        description="Calculates a backup media rotation plan given a rotation "
+        + "schema."
+    )
+    # TODO: Expand description.
+
+    ap.add_argument(
+        "scheme_file",
+        action="store",
+        help="Path to the JSON file that defines the backup rotation schema.",
+    )
+
+    return ap.parse_args(argv[1:])
+
+
+# ---------------------------------------------------------------------
+
+
+def main(argv):
     run_at = datetime.now()
 
-    #  Set scheme here:
-    # backup_scheme = 4
+    args = get_args(argv)
 
-    assert 1 < len(scheme)
+    scheme_name, scheme_levels = get_scheme(args.scheme_file)
 
-    scheme_name = scheme[0].strip().replace(" ", "_")
+    assert 0 < len(scheme_name)
+    assert 0 < len(scheme_levels)
 
     output_path = Path.cwd() / "output"
     assert output_path.exists()
@@ -104,56 +135,25 @@ def main(scheme):
 
     pool = SlotPool(plog)
 
-    # if backup_scheme == 0:
-    #     l1 = RetentionLevel(1, 5, 1, pool, None, plog)
-    #     l2 = RetentionLevel(2, 4, 2, pool, l1, plog)
-    #     l3 = RetentionLevel(3, 10, 4, pool, l2, plog)
-    #     levels = [l1, l2, l3]
-
-    # elif backup_scheme == 1:
-    #     l1 = RetentionLevel(1, 7, 1, pool, None, plog)
-    #     l2 = RetentionLevel(2, 4, 2, pool, l1, plog)
-    #     l3 = RetentionLevel(3, 8, 6, pool, l2, plog)
-    #     levels = [l1, l2, l3]
-
-    # elif backup_scheme == 2:
-    #     l1 = RetentionLevel(1, 7, 1, pool, None, plog)
-    #     l2 = RetentionLevel(2, 4, 2, pool, l1, plog)
-    #     l3 = RetentionLevel(3, 4, 4, pool, l2, plog)
-    #     l4 = RetentionLevel(4, 2, 8, pool, l3, plog)
-    #     l5 = RetentionLevel(5, 2, 16, pool, l4, plog)
-    #     levels = [l1, l2, l3, l4, l5]
-
-    # elif backup_scheme == 3:
-    #     l1 = RetentionLevel(1, 7, 1, pool, None, plog)
-    #     l2 = RetentionLevel(2, 4, 2, pool, l1, plog)
-    #     l3 = RetentionLevel(3, 4, 4, pool, l2, plog)
-    #     l4 = RetentionLevel(4, 2, 8, pool, l3, plog)
-    #     l5 = RetentionLevel(5, 2, 12, pool, l4, plog)
-    #     levels = [l1, l2, l3, l4, l5]
-
-    # else:
-    #     #  Scheme 4
-    #     l1 = RetentionLevel(1, 7, 1, pool, None, plog)
-    #     l2 = RetentionLevel(2, 4, 2, pool, l1, plog)
-    #     l3 = RetentionLevel(3, 4, 4, pool, l2, plog)
-    #     l4 = RetentionLevel(4, 4, 8, pool, l3, plog)
-    #     levels = [l1, l2, l3, l4]
-
     levels = []
-    for x in range(1, len(scheme)):
-        assert scheme[x][0] == x  # First item in tuple is level number.
-        if x == 1:
+    for x in range(len(scheme_levels)):
+        assert scheme_levels[x]["level"] == (x + 1)
+        if x == 0:
             first_level = RetentionLevel(
-                scheme[x][0], scheme[x][1], scheme[x][2], pool, None, plog
+                scheme_levels[x]["level"],
+                scheme_levels[x]["slots"],
+                scheme_levels[x]["interval"],
+                pool,
+                None,
+                plog,
             )
             levels.append(first_level)
         else:
             levels.append(
                 RetentionLevel(
-                    scheme[x][0],
-                    scheme[x][1],
-                    scheme[x][2],
+                    scheme_levels[x]['level'],
+                    scheme_levels[x]['slots'],
+                    scheme_levels[x]['interval'],
                     pool,
                     levels[-1],
                     plog,
@@ -369,48 +369,5 @@ def main(scheme):
     print("Done.")
 
 
-#  ["scheme_name", (level, num_slots, usage_interval), ...]
-
-scheme0 = [
-    "0",
-    (1, 5, 1),
-    (2, 4, 2),
-    (3, 10, 4),
-]
-
-scheme1 = [
-    "1",
-    (1, 7, 1),
-    (2, 4, 2),
-    (3, 8, 6),
-]
-
-scheme2 = [
-    "2",
-    (1, 7, 1),
-    (2, 4, 2),
-    (3, 4, 4),
-    (4, 2, 8),
-    (5, 2, 16),
-]
-
-scheme3 = [
-    "3",
-    (1, 7, 1),
-    (2, 4, 2),
-    (3, 4, 4),
-    (4, 2, 8),
-    (5, 2, 12),
-]
-
-scheme4 = [
-    "4",
-    (1, 7, 1),
-    (2, 4, 2),
-    (3, 4, 4),
-    (4, 4, 8),
-]
-
-
 if __name__ == "__main__":
-    main(scheme4)
+    sys.exit(main(sys.argv))
