@@ -8,9 +8,9 @@
 # ---------------------------------------------------------------------
 
 from datetime import date, datetime, timedelta
+from pathlib import Path
 
 from backup_retention import SlotPool, RetentionLevel, to_alpha_label
-
 from plogger import Plogger
 
 
@@ -61,14 +61,23 @@ def get_cycle_first_last_date(cycle):
 run_at = datetime.now()
 
 #  Include date_time suffix, or not:
-output_suffix = f"-{run_at.strftime('%Y%m%d_%H%M%S')}"
-# output_suffix = ''
+# output_suffix = f"-{run_at.strftime('%Y%m%d_%H%M%S')}"
+output_suffix = ''
 
 
 #  Set scheme here:
 backup_scheme = 4
 
-filename_prefix = f"./output/output-bakrot-{backup_scheme}{output_suffix}"
+output_path = Path.cwd() / "output"
+assert output_path.exists()
+
+output_path = output_path / f"bakrot_{run_at.strftime('%Y%m%d_%H%M%S')}"
+assert not output_path.exists()
+
+output_path.mkdir()
+assert output_path.exists()
+
+filename_prefix = f"{str(output_path)}/bakrot-{backup_scheme}{output_suffix}"
 
 filename_output_main = f"{filename_prefix}-1.csv"
 filename_output_wdates = f"{filename_prefix}-2-wdates.csv"
