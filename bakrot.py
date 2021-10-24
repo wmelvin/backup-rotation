@@ -9,7 +9,6 @@
 
 import argparse
 import json
-
 import sys
 
 from datetime import date, datetime, timedelta
@@ -19,7 +18,7 @@ from backup_retention import SlotPool, RetentionLevel, to_alpha_label
 from plogger import Plogger
 
 
-app_version = "211022.1"
+app_version = "211024.1"
 
 app_label = f"bakrot.py version {app_version}"
 

@@ -3,20 +3,12 @@
 # ---------------------------------------------------------------------
 # backup_retention.py
 #
-# 2020-09-04: Replaces bakrotate.py. Changed class and tuple names.
-#   Using 'retention' instead of 'rotation', 'slot' instead of 'drive'.
-#
-# 2020-09-06: Refactor logging.
-#
-# 2020-09-08: More tweaks and refactoring.
-#
-# 2020-09-11: Shorten csv header labels and action text.
-#
 # ---------------------------------------------------------------------
 
 
 import collections
 import string
+
 from datetime import date
 
 
