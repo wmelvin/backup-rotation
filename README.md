@@ -1,12 +1,12 @@
 #Backup Rotation Scheme Generator
 
-This tool, writen in Python, calculates a scheme for rotating backup media with different levels of retention.
+This command-line tool, writen in Python, calculates a scheme for rotating backup media with different levels of retention.
 
 This is a one-off utility program with some hard-coded parameters. It is **not a finished product.**
 
 It was built with two purposes in mind:
 - Explore different schemes for rotating my personal backup media.
-- Gain experience programming with Python by iterating on solving my own problem.
+- Gain experience programming in Python by iterating on a solution to this problem.
 
 The primary output is a set of *.csv* files. I used *LibreOffice Calc* to view the files and compare different backup rotation schemes.
 
