@@ -11,6 +11,7 @@ import argparse
 import json
 import sys
 
+from collections import namedtuple
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -18,7 +19,10 @@ from backup_retention import SlotPool, RetentionLevel, to_alpha_label
 from plogger import Plogger
 
 
-app_version = "211024.1"
+AppOptions = namedtuple("AppOptions", "scheme_file, debug_level")
+
+
+app_version = "211114.1"
 
 app_label = f"bakrot.py version {app_version}"
 
@@ -83,7 +87,33 @@ def get_args(argv):
         help="Path to the JSON file that defines the backup rotation schema.",
     )
 
+    ap.add_argument(
+        "--debug-level",
+        dest="debug_level",
+        type=int,
+        action="store",
+        help="Write extra debug information. Level: 0=none, 1=all, "
+        + "2=list_levels, 3=list_cycles.",
+    )
+
     return ap.parse_args(argv[1:])
+
+
+def get_opts(argv) -> AppOptions:
+    args = get_args(argv)
+
+    scheme_path = Path(args.scheme_file)
+
+    if not scheme_path.exists():
+        sys.stderr.write(f"\nERROR: File not found: '{scheme_path}'\n")
+        sys.exit(1)
+
+    if args.debug_level is None:
+        debug_level = 0
+    else:
+        debug_level = args.debug_level
+
+    return AppOptions(str(scheme_path), debug_level)
 
 
 # ---------------------------------------------------------------------
@@ -92,9 +122,9 @@ def get_args(argv):
 def main(argv):
     run_at = datetime.now()
 
-    args = get_args(argv)
+    opts = get_opts(argv)
 
-    scheme_name, scheme_levels = get_scheme(args.scheme_file)
+    scheme_name, scheme_levels = get_scheme(opts.scheme_file)
 
     assert 0 < len(scheme_name)
     assert 0 < len(scheme_levels)
@@ -121,7 +151,10 @@ def main(argv):
     filename_output_steps = f"{filename_prefix}-7-steps.txt"
     filename_output_summary = f"{filename_prefix}-8-summary.txt"
 
-    plog = Plogger("bakrot_log.txt", filename_output_steps)
+    filename_log = str(output_path / "bakrot_log.txt")
+    plog = Plogger(
+        filename_log, filename_output_steps, do_timestamp_log1=False
+    )
 
     plog.log2(f"{app_label}\n")
     plog.log2(f"Run started at {run_at.strftime('%Y-%m-%d %H:%M:%S')}")
@@ -150,9 +183,9 @@ def main(argv):
         else:
             levels.append(
                 RetentionLevel(
-                    scheme_levels[x]['level'],
-                    scheme_levels[x]['slots'],
-                    scheme_levels[x]['interval'],
+                    scheme_levels[x]["level"],
+                    scheme_levels[x]["slots"],
+                    scheme_levels[x]["interval"],
                     pool,
                     levels[-1],
                     plog,
@@ -175,21 +208,23 @@ def main(argv):
             )
         )
 
-    dbg_list_levels = False
-    dbg_list_cycles = False
     do_run_main = True
 
-    if dbg_list_levels:
+    if opts.debug_level in [1, 2]:
         for x in range(len(levels)):
             levels[x].list_slots()
 
-    if dbg_list_cycles:
-        s = ",level-1,level-1,level-1,level-2,level-2,level-2,"
-        +"level-3,level-3,level-3"
+    if opts.debug_level in [1, 3]:
+        s = (
+            ",level-1,level-1,level-1,level-2,level-2,level-2,"
+            + "level-3,level-3,level-3"
+        )
         plog.log(s)
 
-        s = "i,usage_cycle,cycle_index,is_used,usage_cycle,cycle_index,"
-        +"is_used,usage_cycle,cycle_index,is_used"
+        s = (
+            "i,usage_cycle,cycle_index,is_used,usage_cycle,cycle_index,"
+            + "is_used,usage_cycle,cycle_index,is_used"
+        )
         plog.log(s)
 
         for w in range(n_weeks):
@@ -361,7 +396,7 @@ def main(argv):
         out_file.write(f"  Minimum days = {min_days}\n")
         out_file.write(f"  Maximum days = {max_days}\n")
 
-    if dbg_list_levels:
+    if opts.debug_level in [1, 2]:
         for x in range(len(levels)):
             levels[x].list_slots()
 
