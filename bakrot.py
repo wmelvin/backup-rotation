@@ -4,7 +4,6 @@
 # bakrot.py
 #
 # Backup roation calculator.
-#
 # ---------------------------------------------------------------------
 
 import argparse
@@ -23,15 +22,17 @@ from plogger import Plogger
 AppOptions = namedtuple("AppOptions", "scheme_file, debug_level")
 
 
-app_version = "211114.1"
+pub_version = "0.1.dev1"
 
-app_label = f"bakrot.py version {app_version}"
+app_version = "211115.1"
+
+app_label = f"bakrot.py version {app_version} ({pub_version})"
 
 
 def debug_log_levels(
     opts: AppOptions, levels_list: List[RetentionLevel], plog: Plogger
 ):
-    if opts.debug_level in [1, 2]:
+    if 0 < opts.debug_level:
         plog.log("BEGIN debug_log_levels")
         for x in range(len(levels_list)):
             levels_list[x].debug_log_slots()
@@ -74,9 +75,6 @@ def get_cycle_first_last_date(cycle):
     return first_date, last_date
 
 
-# ---------------------------------------------------------------------
-
-
 def get_scheme(file_name):
     with open(file_name, "r") as f:
         s = f.read()
@@ -103,8 +101,8 @@ def get_args(argv):
         dest="debug_level",
         type=int,
         action="store",
-        help="Write extra debug information. Level: 0=none, 1=all, "
-        + "2=list_levels, 3=list_cycles.",
+        help="Write extra debug information. Level: 0=none, 1=all. "
+        + "Default is 0.",
     )
 
     return ap.parse_args(argv[1:])
@@ -125,9 +123,6 @@ def get_opts(argv) -> AppOptions:
         debug_level = args.debug_level
 
     return AppOptions(str(scheme_path), debug_level)
-
-
-# ---------------------------------------------------------------------
 
 
 def main(argv):
@@ -223,37 +218,6 @@ def main(argv):
     do_run_main = True
 
     debug_log_levels(opts, levels, plog)
-
-    if opts.debug_level in [1, 3]:
-        plog.log("BEGIN DEBUG LIST CYCLES")
-        s = (
-            ",level-1,level-1,level-1,level-2,level-2,level-2,"
-            + "level-3,level-3,level-3"
-        )
-        plog.log(s)
-
-        s = (
-            "i,usage_cycle,cycle_index,is_used,usage_cycle,cycle_index,"
-            + "is_used,usage_cycle,cycle_index,is_used"
-        )
-        plog.log(s)
-
-        for w in range(n_weeks):
-            d = start_date + timedelta(weeks=w)
-
-            for x in range(len(levels)):
-                levels[x].start_cycle(w, d)
-
-            s = f"{w},"
-            for x in range(len(levels) - 1, -1, -1):
-                s += ",{0},{1},{2:1}".format(
-                    levels[x].cycle_num,
-                    levels[x].cycle_index,
-                    levels[x].in_cycle,
-                )
-
-            plog.log(s)
-        plog.log("END DEBUG LIST CYCLES")
 
     plog.log2(f"\nCycles ({n_weeks}):\n")
 
