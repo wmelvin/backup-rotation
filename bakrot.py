@@ -64,7 +64,7 @@ def get_levels_as_csv(prefix, levels_list, add_notes, do_diff, do_dates):
     for action in actions_list:
         actions_str += f"{action} "
 
-    s += ',"{0}","{1}"{2}'.format(actions_str.strip(), add_notes, "\n")
+    s += ',"{0}","{1}"\n'.format(actions_str.strip(), add_notes)
     return s
 
 
@@ -147,6 +147,38 @@ def get_opts(argv) -> AppOptions:
     return AppOptions(str(scheme_path), debug_level)
 
 
+def get_retention_levels(
+    scheme: RotationScheme, pool: SlotPool, plog: Plogger
+) -> List[RetentionLevel]:
+
+    levels: List[RetentionLevel] = []
+
+    for x in range(len(scheme.levels)):
+        assert scheme.levels[x]["level"] == (x + 1)
+        if x == 0:
+            #  For first level, level_below is None.
+            level = RetentionLevel(
+                scheme.levels[x]["level"],
+                scheme.levels[x]["slots"],
+                scheme.levels[x]["interval"],
+                pool,
+                None,
+                plog,
+            )
+            levels.append(level)
+        else:
+            level = RetentionLevel(
+                scheme.levels[x]["level"],
+                scheme.levels[x]["slots"],
+                scheme.levels[x]["interval"],
+                pool,
+                levels[-1],
+                plog,
+            )
+            levels.append(level)
+    return levels
+
+
 def main(argv):
     run_at = datetime.now()
 
@@ -189,31 +221,7 @@ def main(argv):
 
     pool = SlotPool(plog)
 
-    levels: List[RetentionLevel] = []
-
-    for x in range(len(scheme.levels)):
-        assert scheme.levels[x]["level"] == (x + 1)
-        if x == 0:
-            first_level = RetentionLevel(
-                scheme.levels[x]["level"],
-                scheme.levels[x]["slots"],
-                scheme.levels[x]["interval"],
-                pool,
-                None,
-                plog,
-            )
-            levels.append(first_level)
-        else:
-            levels.append(
-                RetentionLevel(
-                    scheme.levels[x]["level"],
-                    scheme.levels[x]["slots"],
-                    scheme.levels[x]["interval"],
-                    pool,
-                    levels[-1],
-                    plog,
-                )
-            )
+    levels = get_retention_levels(scheme, pool, plog)
 
     top_index = len(levels) - 1
 
@@ -244,7 +252,7 @@ def main(argv):
         header_csv = '"cycle","date"'
         for x in range(len(levels)):
             header_csv += f"{levels[x].csvfrag_header()},."
-        header_csv += ',"Actions", "Notes"{0}'.format("\n")
+        header_csv += ',"Actions", "Notes"\n'
 
         outlist_main += header_csv
 
@@ -269,13 +277,13 @@ def main(argv):
             for x in range(top_index, 0, -1):
                 levels[x].pull_from_lower_level()
 
-            first_level.free_slot()
+            levels[0].free_slot()
 
             outlist_detail += get_levels_as_csv(
                 info_prefix, levels, "before next slot", False, True
             )
 
-            first_level.next_slot()
+            levels[0].next_slot()
 
             all_cycles.append(levels[top_index].get_slots_in_use())
 
@@ -313,12 +321,11 @@ def main(argv):
                 first_date, last_date = get_cycle_first_last_date(cycle)
                 days_between = (last_date - first_date).days
                 out_file.write(
-                    "{0},{1},{2},{3}{4}".format(
+                    "{0},{1},{2},{3}\n".format(
                         n,
                         first_date.strftime("%Y-%m-%d"),
                         last_date.strftime("%Y-%m-%d"),
                         days_between,
-                        "\n",
                     )
                 )
                 # If all slots were full then include this cycle for min
@@ -379,11 +386,10 @@ def main(argv):
         out_file.write("\nLevels:\n")
         for x in range(len(levels)):
             out_file.write(
-                "  Level {0}: slots = {1}, interval = {2}.{3}".format(
+                "  Level {0}: slots = {1}, interval = {2}.\n".format(
                     levels[x].level,
                     levels[x].num_slots,
                     levels[x].usage_interval,
-                    "\n",
                 )
             )
         out_file.write(f"\nTotal media slots: {total_slots}\n")
