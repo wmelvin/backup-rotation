@@ -22,6 +22,11 @@ from plogger import Plogger
 AppOptions = namedtuple("AppOptions", "scheme_file, debug_level")
 
 
+RotationScheme = namedtuple(
+    "RotationScheme", "name, start_date, cycles, period, levels"
+)
+
+
 pub_version = "0.1.dev1"
 
 app_version = "211115.1"
@@ -75,12 +80,29 @@ def get_cycle_first_last_date(cycle):
     return first_date, last_date
 
 
-def get_scheme(file_name):
+def get_scheme(file_name) -> RotationScheme:
     with open(file_name, "r") as f:
         s = f.read()
+
     data = json.loads(s)
-    scheme = data["rotation_scheme"]
-    return scheme["name"], scheme["levels"]
+
+    scheme_raw = data["rotation_scheme"]
+
+    period = str(scheme_raw["period"]).strip().lower().rstrip("s")
+
+    if period not in ["day", "week"]:
+        sys.stderr.write(f"ERROR in '{file_name}'\n")
+        sys.stderr.write('The value for "period" must be "day" or "week".\n')
+        sys.exit(1)
+
+    scheme = RotationScheme(
+        scheme_raw["name"],
+        date.fromisoformat(scheme_raw["startdate"]),
+        int(scheme_raw["cycles"]),
+        period,
+        scheme_raw["levels"],
+    )
+    return scheme
 
 
 def get_args(argv):
@@ -130,16 +152,16 @@ def main(argv):
 
     opts = get_opts(argv)
 
-    scheme_name, scheme_levels = get_scheme(opts.scheme_file)
+    scheme = get_scheme(opts.scheme_file)
 
-    assert 0 < len(scheme_name)
-    assert 0 < len(scheme_levels)
+    assert 0 < len(scheme.name)
+    assert 0 < len(scheme.levels)
 
     output_path = Path.cwd() / "output"
     assert output_path.exists()
 
     output_path = output_path / "bakrot_{0}_{1}".format(
-        run_at.strftime("%Y%m%d_%H%M%S"), scheme_name
+        run_at.strftime("%Y%m%d_%H%M%S"), scheme.name
     )
     assert not output_path.exists()
 
@@ -165,23 +187,17 @@ def main(argv):
     plog.log2(f"{app_label}\n")
     plog.log2(f"Run started at {run_at.strftime('%Y-%m-%d %H:%M:%S')}")
 
-    start_date = date(2020, 7, 5)
-
-    #  Cycles are weeks in this insance.
-    n_years = 5
-    n_weeks = 52 * n_years
-
     pool = SlotPool(plog)
 
     levels: List[RetentionLevel] = []
 
-    for x in range(len(scheme_levels)):
-        assert scheme_levels[x]["level"] == (x + 1)
+    for x in range(len(scheme.levels)):
+        assert scheme.levels[x]["level"] == (x + 1)
         if x == 0:
             first_level = RetentionLevel(
-                scheme_levels[x]["level"],
-                scheme_levels[x]["slots"],
-                scheme_levels[x]["interval"],
+                scheme.levels[x]["level"],
+                scheme.levels[x]["slots"],
+                scheme.levels[x]["interval"],
                 pool,
                 None,
                 plog,
@@ -190,9 +206,9 @@ def main(argv):
         else:
             levels.append(
                 RetentionLevel(
-                    scheme_levels[x]["level"],
-                    scheme_levels[x]["slots"],
-                    scheme_levels[x]["interval"],
+                    scheme.levels[x]["level"],
+                    scheme.levels[x]["slots"],
+                    scheme.levels[x]["interval"],
                     pool,
                     levels[-1],
                     plog,
@@ -219,7 +235,7 @@ def main(argv):
 
     debug_log_levels(opts, levels, plog)
 
-    plog.log2(f"\nCycles ({n_weeks}):\n")
+    plog.log2(f"\nCycles ({scheme.cycles}):\n")
 
     if do_run_main:
         all_cycles = []
@@ -235,15 +251,20 @@ def main(argv):
         outlist_wdates = outlist_main.copy()
         outlist_detail = outlist_main.copy()
 
-        for week_num in range(n_weeks):
-            week_date = start_date + timedelta(weeks=week_num)
+        for cycle_num in range(scheme.cycles + 1):
+            if scheme.period == "day":
+                cycle_date = scheme.start_date + timedelta(days=cycle_num)
+                plog.log2(f"Cycle {cycle_num} ({cycle_date:%Y-%m-%d}):")
+            else:
+                cycle_date = scheme.start_date + timedelta(weeks=cycle_num)
+                plog.log2(
+                    f"Cycle {cycle_num} (week of {cycle_date:%Y-%m-%d}):"
+                )
 
-            plog.log2(f"Cycle {week_num} (week of {week_date:%Y-%m-%d}):")
-
-            info_prefix = f"{week_num},{week_date}"
+            info_prefix = f"{cycle_num},{cycle_date}"
 
             for x in range(len(levels)):
-                levels[x].start_cycle(week_num, week_date)
+                levels[x].start_cycle(cycle_num, cycle_date)
 
             for x in range(top_index, 0, -1):
                 levels[x].pull_from_lower_level()
@@ -354,7 +375,7 @@ def main(argv):
         out_file.write(
             f"\nRun started at {run_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
         )
-        out_file.write(f"\nBackup scheme: {scheme_name}\n")
+        out_file.write(f"\nBackup scheme: {scheme.name}\n")
         out_file.write("\nLevels:\n")
         for x in range(len(levels)):
             out_file.write(
