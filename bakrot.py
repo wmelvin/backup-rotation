@@ -213,11 +213,15 @@ def main(argv):
 
     filename_log = str(output_path / "bakrot_log.txt")
     plog = Plogger(
-        filename_log, filename_output_steps, do_timestamp_log1=False
+        log_file_name=filename_log,
+        log_immediate=False,
+        log_timestamp=False,
+        steps_file_name=filename_output_steps,
+        steps_immediate=False,
     )
 
-    plog.log2(f"{app_label}\n")
-    plog.log2(f"Run started at {run_at.strftime('%Y-%m-%d %H:%M:%S')}")
+    plog.log_step(f"{app_label}\n")
+    plog.log_step(f"Run started at {run_at.strftime('%Y-%m-%d %H:%M:%S')}")
 
     pool = SlotPool(plog)
 
@@ -229,9 +233,9 @@ def main(argv):
     for x in range(len(levels)):
         total_slots += levels[x].num_slots
 
-    plog.log2("\nLevels:\n")
+    plog.log_step("\nLevels:\n")
     for x in range(len(levels)):
-        plog.log2(
+        plog.log_step(
             "Level {}: slots = {}, interval = {}.".format(
                 levels[x].level,
                 levels[x].num_slots,
@@ -243,7 +247,7 @@ def main(argv):
 
     debug_log_levels(opts, levels, plog)
 
-    plog.log2(f"\nCycles ({scheme.cycles}):\n")
+    plog.log_step(f"\nCycles ({scheme.cycles}):\n")
 
     if do_run_main:
         all_cycles = []
@@ -262,10 +266,10 @@ def main(argv):
         for cycle_num in range(scheme.cycles + 1):
             if scheme.period == "day":
                 cycle_date = scheme.start_date + timedelta(days=cycle_num)
-                plog.log2(f"Cycle {cycle_num} ({cycle_date:%Y-%m-%d}):")
+                plog.log_step(f"Cycle {cycle_num} ({cycle_date:%Y-%m-%d}):")
             else:
                 cycle_date = scheme.start_date + timedelta(weeks=cycle_num)
-                plog.log2(
+                plog.log_step(
                     f"Cycle {cycle_num} (week of {cycle_date:%Y-%m-%d}):"
                 )
 
@@ -400,6 +404,12 @@ def main(argv):
         out_file.write(f"  Maximum days = {max_days}\n")
 
     debug_log_levels(opts, levels, plog)
+
+    print(f"Writing {filename_output_steps}")
+    plog.save_steps()
+
+    print(f"Writing {filename_log}")
+    plog.save_log()
 
     print("Done.")
 

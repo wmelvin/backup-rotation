@@ -35,11 +35,11 @@ def slot_label(n, show_number=False):
         return f"{to_alpha_label(n)}"
 
 
-#  A RetentionSlot refers to a set of one or more backup media,
-#  such as external hard drives.
 RetentionSlot = collections.namedtuple(
     "RetentionSlot", "slot_num, use_count, cycle_used, backup_date"
 )
+#  A RetentionSlot refers to a set of one or more backup media,
+#  such as external hard drives.
 
 
 class SlotPool:
@@ -55,7 +55,7 @@ class SlotPool:
             self.logger.log(
                 f"SlotPool.get_next_slot: {slot_label(n, True)} new"
             )
-            self.logger.log2(f"    New slot {slot_label(n)}")
+            self.logger.log_step(f"    New slot {slot_label(n)}")
             return RetentionSlot(n, 0, 0, 0)
         else:
             ds = self.pool.pop()
@@ -64,7 +64,7 @@ class SlotPool:
                     slot_label(ds.slot_num, True)
                 )
             )
-            self.logger.log2(f"    Reuse slot {slot_label(ds.slot_num)}")
+            self.logger.log_step(f"    Reuse slot {slot_label(ds.slot_num)}")
         return RetentionSlot(ds.slot_num, ds.use_count, 0, 0)
 
     def add_slot(self, slot):
@@ -163,7 +163,7 @@ class RetentionLevel:
 
     def mark_free(self, index):
         ds = self.slots[index]
-        self.logger.log2(
+        self.logger.log_step(
             "  Free slot {} in level {} (index {}).".format(
                 slot_label(ds.slot_num),
                 self.level,
@@ -217,7 +217,7 @@ class RetentionLevel:
             pulled = self.level_below.pull_slot()
             if 0 < pulled.slot_num:
                 self.free_slot()
-                self.logger.log2(
+                self.logger.log_step(
                     "  Move slot {0} to level {1} (index {2}).".format(
                         slot_label(pulled.slot_num),
                         self.level,
@@ -259,7 +259,7 @@ class RetentionLevel:
                     self.cycle_num, self.level, next_index
                 )
             )
-            self.logger.log2(
+            self.logger.log_step(
                 f"  Get next slot for level {self.level} (index {next_index})."
             )
 
