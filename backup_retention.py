@@ -10,6 +10,7 @@ import collections
 import string
 
 from datetime import date
+from typing import List
 
 
 def to_alpha_label(n):
@@ -96,8 +97,12 @@ class RetentionLevel:
         self.free_index = -1
         self.in_cycle = False
         self.cycle_actions = []
-        self.slots = [RetentionSlot(0, 0, 0, 0) for x in range(num_slots)]
-        self.prevs = [RetentionSlot(0, 0, 0, 0) for x in range(num_slots)]
+        self.slots: List[RetentionSlot] = [
+            RetentionSlot(0, 0, 0, 0) for x in range(num_slots)
+        ]
+        self.prevs: List[RetentionSlot] = [
+            RetentionSlot(0, 0, 0, 0) for x in range(num_slots)
+        ]
 
         #  Higher levels must have longer intervals.
         if self.level_below is not None:
@@ -145,7 +150,7 @@ class RetentionLevel:
                 x = i
         return x
 
-    def list_slots(self):
+    def debug_log_slots(self):
         self.logger.log(f"L{self.level} list_slots:")
         for i in range(self.num_slots):
             self.logger.log(
@@ -198,11 +203,7 @@ class RetentionLevel:
                 (
                     "Cycle {0}, Level {1}, Index {2}: pull_slot, No slot to "
                     + "pull (level not full)"
-                ).format(
-                    self.cycle_num,
-                    self.level,
-                    self.cycle_index
-                )
+                ).format(self.cycle_num, self.level, self.cycle_index)
             )
             return RetentionSlot(0, 0, 0, 0)
 
@@ -211,11 +212,7 @@ class RetentionLevel:
             self.logger.log(
                 (
                     "Cycle {0}, Level {1}, Index {2}: pull_from_lower_level"
-                ).format(
-                    self.cycle_num,
-                    self.level,
-                    self.cycle_index
-                )
+                ).format(self.cycle_num, self.level, self.cycle_index)
             )
             pulled = self.level_below.pull_slot()
             if 0 < pulled.slot_num:

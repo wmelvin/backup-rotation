@@ -14,6 +14,7 @@ import sys
 from collections import namedtuple
 from datetime import date, datetime, timedelta
 from pathlib import Path
+from typing import List
 
 from backup_retention import SlotPool, RetentionLevel, to_alpha_label
 from plogger import Plogger
@@ -25,6 +26,16 @@ AppOptions = namedtuple("AppOptions", "scheme_file, debug_level")
 app_version = "211114.1"
 
 app_label = f"bakrot.py version {app_version}"
+
+
+def debug_log_levels(
+    opts: AppOptions, levels_list: List[RetentionLevel], plog: Plogger
+):
+    if opts.debug_level in [1, 2]:
+        plog.log("BEGIN debug_log_levels")
+        for x in range(len(levels_list)):
+            levels_list[x].debug_log_slots()
+        plog.log("END debug_log_levels")
 
 
 def get_levels_as_csv(prefix, levels_list, add_notes, do_diff, do_dates):
@@ -167,7 +178,8 @@ def main(argv):
 
     pool = SlotPool(plog)
 
-    levels = []
+    levels: List[RetentionLevel] = []
+
     for x in range(len(scheme_levels)):
         assert scheme_levels[x]["level"] == (x + 1)
         if x == 0:
@@ -210,11 +222,10 @@ def main(argv):
 
     do_run_main = True
 
-    if opts.debug_level in [1, 2]:
-        for x in range(len(levels)):
-            levels[x].list_slots()
+    debug_log_levels(opts, levels, plog)
 
     if opts.debug_level in [1, 3]:
+        plog.log("BEGIN DEBUG LIST CYCLES")
         s = (
             ",level-1,level-1,level-1,level-2,level-2,level-2,"
             + "level-3,level-3,level-3"
@@ -242,6 +253,7 @@ def main(argv):
                 )
 
             plog.log(s)
+        plog.log("END DEBUG LIST CYCLES")
 
     plog.log2(f"\nCycles ({n_weeks}):\n")
 
@@ -396,9 +408,7 @@ def main(argv):
         out_file.write(f"  Minimum days = {min_days}\n")
         out_file.write(f"  Maximum days = {max_days}\n")
 
-    if opts.debug_level in [1, 2]:
-        for x in range(len(levels)):
-            levels[x].list_slots()
+    debug_log_levels(opts, levels, plog)
 
     print("Done.")
 
