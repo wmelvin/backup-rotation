@@ -10,7 +10,7 @@ It was built with two purposes in mind:
 
 The primary output is a set of *.csv* files. I used *LibreOffice Calc* to view the files and compare different backup rotation schemes.
 
-I did settle on a scheme to use, and copied the rotation plan from the main output file (`output-bakrot-*-1.csv`) to a spreadsheet where I track the actual backups.
+I did settle on a scheme to use, and copied the rotation plan from the main output file (`output-bakrot-*-1.csv`) to a spreadsheet where I track the actual backups (the script was originally named "bakrot.py" - short for "backup rotation").
 
 My initial plan was to rotate a set of external hard drives at a weekly backup interval, and keep a given number of backups at different (increasingly longer) retention intervals.
 

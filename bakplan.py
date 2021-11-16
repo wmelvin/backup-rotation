@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # ---------------------------------------------------------------------
-# bakrot.py
+# bakplan.py
 #
 # Backup roation calculator.
 # ---------------------------------------------------------------------
@@ -31,7 +31,7 @@ pub_version = "0.1.dev1"
 
 app_version = "211115.1"
 
-app_label = f"bakrot.py version {app_version} ({pub_version})"
+app_label = f"bakplan.py version {app_version} ({pub_version})"
 
 
 all_cycles = []
@@ -266,7 +266,7 @@ def main(argv):
     output_path = Path.cwd() / "output"
     assert output_path.exists()
 
-    output_path = output_path / "bakrot_{0}_{1}".format(
+    output_path = output_path / "bakplan_{0}_{1}".format(
         run_at.strftime("%Y%m%d_%H%M%S"), scheme.name
     )
     assert not output_path.exists()
@@ -274,7 +274,7 @@ def main(argv):
     output_path.mkdir()
     assert output_path.exists()
 
-    filename_prefix = f"{str(output_path)}/bakrot"
+    filename_prefix = f"{str(output_path)}/bakplan"
 
     filename_output_main = f"{filename_prefix}-1.csv"
     filename_output_wdates = f"{filename_prefix}-2-wdates.csv"
@@ -285,7 +285,7 @@ def main(argv):
     filename_output_steps = f"{filename_prefix}-7-steps.txt"
     filename_output_summary = f"{filename_prefix}-8-summary.txt"
 
-    filename_log = str(output_path / "bakrot_log.txt")
+    filename_log = str(output_path / "bakplan_log.txt")
     plog = Plogger(
         log_file_name=filename_log,
         log_immediate=False,
