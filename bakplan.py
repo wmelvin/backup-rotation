@@ -29,7 +29,7 @@ RotationScheme = namedtuple(
 
 pub_version = "0.1.dev1"
 
-app_version = "211115.1"
+app_version = "211116.1"
 
 app_label = f"bakplan.py version {app_version} ({pub_version})"
 
@@ -86,19 +86,18 @@ def get_cycle_first_last_date(cycle):
     return first_date, last_date
 
 
-def get_scheme(file_name) -> RotationScheme:
-    with open(file_name, "r") as f:
-        s = f.read()
-
+def get_scheme_from_json(json_str: str, source_name: str) -> RotationScheme:
     try:
-        data = json.loads(s)
+        data = json.loads(json_str)
 
         scheme_raw = data["rotation_scheme"]
 
         period = str(scheme_raw["period"]).strip().lower().rstrip("s")
 
         if period not in ["day", "week"]:
-            sys.stderr.write(f"ERROR in '{file_name}'\n")
+            sys.stderr.write(
+                f"ERROR in rotation_scheme from '{source_name}'\n"
+            )
             sys.stderr.write(
                 'The value for "period" must be "day" or "week".\n'
             )
@@ -112,12 +111,18 @@ def get_scheme(file_name) -> RotationScheme:
             scheme_raw["levels"],
         )
     except KeyError as e:
-        sys.stderr.write(f"ERROR reading configuration from {file_name}.\n")
+        sys.stderr.write(f"ERROR in rotation_scheme from '{source_name}'\n")
         sys.stderr.write(f"Missing key: {e}\n")
-        # TODO: better message.
         sys.exit(1)
 
     return scheme
+
+
+def get_scheme_from_file(file_name) -> RotationScheme:
+    with open(file_name, "r") as f:
+        s = f.read()
+
+    return get_scheme_from_json(s, file_name)
 
 
 def get_args(argv):
@@ -162,7 +167,7 @@ def get_opts(argv) -> AppOptions:
     return AppOptions(str(scheme_path), debug_level)
 
 
-def get_retention_levels(
+def create_retention_levels(
     scheme: RotationScheme, pool: SlotPool, plog: Plogger
 ) -> List[RetentionLevel]:
 
@@ -206,6 +211,8 @@ def run_cycles(
     outlist_detail.append(header_csv)
 
     top_index = len(levels) - 1
+
+    plog.log_step(f"\nCycles ({scheme.cycles}):\n")
 
     for cycle_num in range(scheme.cycles + 1):
         if scheme.period == "day":
@@ -258,7 +265,7 @@ def main(argv):
 
     opts = get_opts(argv)
 
-    scheme = get_scheme(opts.scheme_file)
+    scheme = get_scheme_from_file(opts.scheme_file)
 
     assert 0 < len(scheme.name)
     assert 0 < len(scheme.levels)
@@ -299,7 +306,7 @@ def main(argv):
 
     pool = SlotPool(plog)
 
-    levels = get_retention_levels(scheme, pool, plog)
+    levels = create_retention_levels(scheme, pool, plog)
 
     total_slots = 0
     for x in range(len(levels)):
@@ -316,8 +323,6 @@ def main(argv):
         )
 
     debug_log_levels(opts, levels, plog)
-
-    plog.log_step(f"\nCycles ({scheme.cycles}):\n")
 
     run_cycles(scheme, levels, plog)
 
