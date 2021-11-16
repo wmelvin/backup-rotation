@@ -34,6 +34,12 @@ app_version = "211115.1"
 app_label = f"bakrot.py version {app_version} ({pub_version})"
 
 
+all_cycles = []
+outlist_main = []
+outlist_wdates = []
+outlist_detail = []
+
+
 def debug_log_levels(
     opts: AppOptions, levels_list: List[RetentionLevel], plog: Plogger
 ):
@@ -188,6 +194,65 @@ def get_retention_levels(
     return levels
 
 
+def run_cycles(
+    scheme: RotationScheme, levels: List[RetentionLevel], plog: Plogger
+):
+    header_csv = '"cycle","date"'
+    for x in range(len(levels)):
+        header_csv += f"{levels[x].csvfrag_header()},."
+    header_csv += ',"Actions", "Notes"\n'
+    outlist_main.append(header_csv)
+    outlist_wdates.append(header_csv)
+    outlist_detail.append(header_csv)
+
+    top_index = len(levels) - 1
+
+    for cycle_num in range(scheme.cycles + 1):
+        if scheme.period == "day":
+            cycle_date = scheme.start_date + timedelta(days=cycle_num)
+            plog.log_step(f"Cycle {cycle_num} ({cycle_date:%Y-%m-%d}):")
+        else:
+            cycle_date = scheme.start_date + timedelta(weeks=cycle_num)
+            plog.log_step(
+                f"Cycle {cycle_num} (week of {cycle_date:%Y-%m-%d}):"
+            )
+
+        info_prefix = f"{cycle_num},{cycle_date}"
+
+        for x in range(len(levels)):
+            levels[x].start_cycle(cycle_num, cycle_date)
+
+        # TODO: Is this correct? Should the top level not pull from lower?
+        for x in range(top_index, 0, -1):
+            levels[x].pull_from_lower_level()
+
+        levels[0].free_slot()
+
+        outlist_detail.append(
+            get_levels_as_csv(
+                info_prefix, levels, "before next slot", False, True
+            )
+        )
+
+        levels[0].next_slot()
+
+        all_cycles.append(levels[top_index].get_slots_in_use())
+
+        outlist_detail.append(
+            get_levels_as_csv(
+                info_prefix, levels, "after next slot", False, True
+            )
+        )
+
+        outlist_main.append(
+            get_levels_as_csv(info_prefix, levels, "", True, False)
+        )
+
+        outlist_wdates.append(
+            get_levels_as_csv(info_prefix, levels, "", True, True)
+        )
+
+
 def main(argv):
     run_at = datetime.now()
 
@@ -236,8 +301,6 @@ def main(argv):
 
     levels = get_retention_levels(scheme, pool, plog)
 
-    top_index = len(levels) - 1
-
     total_slots = 0
     for x in range(len(levels)):
         total_slots += levels[x].num_slots
@@ -252,103 +315,49 @@ def main(argv):
             )
         )
 
-    do_run_main = True
-
     debug_log_levels(opts, levels, plog)
 
     plog.log_step(f"\nCycles ({scheme.cycles}):\n")
 
-    if do_run_main:
-        all_cycles = []
-        outlist_main = []
+    run_cycles(scheme, levels, plog)
 
-        header_csv = '"cycle","date"'
-        for x in range(len(levels)):
-            header_csv += f"{levels[x].csvfrag_header()},."
-        header_csv += ',"Actions", "Notes"\n'
+    print(f"Writing {filename_output_main}")
+    with open(filename_output_main, "w") as out_file:
+        out_file.writelines(outlist_main)
 
-        outlist_main += header_csv
+    print(f"Writing {filename_output_wdates}")
+    with open(filename_output_wdates, "w") as out_file:
+        out_file.writelines(outlist_wdates)
 
-        outlist_wdates = outlist_main.copy()
-        outlist_detail = outlist_main.copy()
+    print(f"Writing {filename_output_detail}")
+    with open(filename_output_detail, "w") as out_file:
+        out_file.writelines(outlist_detail)
 
-        for cycle_num in range(scheme.cycles + 1):
-            if scheme.period == "day":
-                cycle_date = scheme.start_date + timedelta(days=cycle_num)
-                plog.log_step(f"Cycle {cycle_num} ({cycle_date:%Y-%m-%d}):")
-            else:
-                cycle_date = scheme.start_date + timedelta(weeks=cycle_num)
-                plog.log_step(
-                    f"Cycle {cycle_num} (week of {cycle_date:%Y-%m-%d}):"
+    print(f"Writing {filename_output_range}")
+    min_days = 0
+    max_days = 0
+    with open(filename_output_range, "w") as out_file:
+        out_file.write("Cycle,FirstDate,LastDate,Days\n")
+        n = 0
+        for cycle in all_cycles:
+            first_date, last_date = get_cycle_first_last_date(cycle)
+            days_between = (last_date - first_date).days
+            out_file.write(
+                "{0},{1},{2},{3}\n".format(
+                    n,
+                    first_date.strftime("%Y-%m-%d"),
+                    last_date.strftime("%Y-%m-%d"),
+                    days_between,
                 )
-
-            info_prefix = f"{cycle_num},{cycle_date}"
-
-            for x in range(len(levels)):
-                levels[x].start_cycle(cycle_num, cycle_date)
-
-            for x in range(top_index, 0, -1):
-                levels[x].pull_from_lower_level()
-
-            levels[0].free_slot()
-
-            outlist_detail += get_levels_as_csv(
-                info_prefix, levels, "before next slot", False, True
             )
-
-            levels[0].next_slot()
-
-            all_cycles.append(levels[top_index].get_slots_in_use())
-
-            outlist_detail += get_levels_as_csv(
-                info_prefix, levels, "after next slot", False, True
-            )
-
-            outlist_main += get_levels_as_csv(
-                info_prefix, levels, "", True, False
-            )
-
-            outlist_wdates += get_levels_as_csv(
-                info_prefix, levels, "", True, True
-            )
-
-        print(f"Writing {filename_output_main}")
-        with open(filename_output_main, "w") as out_file:
-            out_file.writelines(outlist_main)
-
-        print(f"Writing {filename_output_wdates}")
-        with open(filename_output_wdates, "w") as out_file:
-            out_file.writelines(outlist_wdates)
-
-        print(f"Writing {filename_output_detail}")
-        with open(filename_output_detail, "w") as out_file:
-            out_file.writelines(outlist_detail)
-
-        print(f"Writing {filename_output_range}")
-        min_days = 0
-        max_days = 0
-        with open(filename_output_range, "w") as out_file:
-            out_file.write("Cycle,FirstDate,LastDate,Days\n")
-            n = 0
-            for cycle in all_cycles:
-                first_date, last_date = get_cycle_first_last_date(cycle)
-                days_between = (last_date - first_date).days
-                out_file.write(
-                    "{0},{1},{2},{3}\n".format(
-                        n,
-                        first_date.strftime("%Y-%m-%d"),
-                        last_date.strftime("%Y-%m-%d"),
-                        days_between,
-                    )
-                )
-                # If all slots were full then include this cycle for min
-                # and max days range. This is reported in the summary file.
-                if len(cycle) == total_slots:
-                    if (days_between < min_days) or (min_days == 0):
-                        min_days = days_between
-                    if days_between > max_days:
-                        max_days = days_between
-                n += 1
+            # If all slots were full then include this cycle for min
+            # and max days range. This is reported in the summary file.
+            if len(cycle) == total_slots:
+                if (days_between < min_days) or (min_days == 0):
+                    min_days = days_between
+                if days_between > max_days:
+                    max_days = days_between
+            n += 1
 
         all_dates = []
         for cycle in all_cycles:
