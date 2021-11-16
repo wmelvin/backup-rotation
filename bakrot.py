@@ -38,10 +38,10 @@ def debug_log_levels(
     opts: AppOptions, levels_list: List[RetentionLevel], plog: Plogger
 ):
     if 0 < opts.debug_level:
-        plog.log("BEGIN debug_log_levels")
+        plog.log_msg("BEGIN debug_log_levels")
         for x in range(len(levels_list)):
             levels_list[x].debug_log_slots()
-        plog.log("END debug_log_levels")
+        plog.log_msg("END debug_log_levels")
 
 
 def get_levels_as_csv(prefix, levels_list, add_notes, do_diff, do_dates):
@@ -84,24 +84,33 @@ def get_scheme(file_name) -> RotationScheme:
     with open(file_name, "r") as f:
         s = f.read()
 
-    data = json.loads(s)
+    try:
+        data = json.loads(s)
 
-    scheme_raw = data["rotation_scheme"]
+        scheme_raw = data["rotation_scheme"]
 
-    period = str(scheme_raw["period"]).strip().lower().rstrip("s")
+        period = str(scheme_raw["period"]).strip().lower().rstrip("s")
 
-    if period not in ["day", "week"]:
-        sys.stderr.write(f"ERROR in '{file_name}'\n")
-        sys.stderr.write('The value for "period" must be "day" or "week".\n')
+        if period not in ["day", "week"]:
+            sys.stderr.write(f"ERROR in '{file_name}'\n")
+            sys.stderr.write(
+                'The value for "period" must be "day" or "week".\n'
+            )
+            sys.exit(1)
+
+        scheme = RotationScheme(
+            scheme_raw["name"],
+            date.fromisoformat(scheme_raw["startdate"]),
+            int(scheme_raw["cycles"]),
+            period,
+            scheme_raw["levels"],
+        )
+    except KeyError as e:
+        sys.stderr.write(f"ERROR reading configuration from {file_name}.\n")
+        sys.stderr.write(f"Missing key: {e}\n")
+        # TODO: better message.
         sys.exit(1)
 
-    scheme = RotationScheme(
-        scheme_raw["name"],
-        date.fromisoformat(scheme_raw["startdate"]),
-        int(scheme_raw["cycles"]),
-        period,
-        scheme_raw["levels"],
-    )
     return scheme
 
 

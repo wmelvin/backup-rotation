@@ -41,9 +41,10 @@ class Plogger:
     def _can_write_steps(self):
         return 0 < len(self.steps_file_name)
 
-    def log(self, msg):
+    def log_msg(self, msg):
         if self.log_timestamp:
-            msg = f"[{datetime.now():%Y%m%d_%H%M%S}] {msg}"
+            # msg = f"[{datetime.now():%Y%m%d_%H%M%S}] {msg}"
+            msg = f"[{datetime.now():%y%m%d_%H%M%S_%f}] {msg}"
 
         if self.log_immediate:
             if self._can_write_log():
@@ -66,9 +67,11 @@ class Plogger:
             with open(self.log_file_name, "a") as f:
                 for s in self.entries:
                     f.write(f"{s}\n")
+            self.entries.clear()
 
     def save_steps(self):
         if self._can_write_steps() and 0 < len(self.steps):
             with open(self.steps_file_name, "a") as f:
                 for s in self.steps:
                     f.write(f"{s}\n")
+            self.steps.clear()
