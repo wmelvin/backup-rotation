@@ -29,7 +29,7 @@ RotationScheme = namedtuple(
 
 pub_version = "0.1.dev1"
 
-app_version = "211116.1"
+app_version = "211117.1"
 
 app_label = f"bakplan.py version {app_version} ({pub_version})"
 
@@ -128,14 +128,14 @@ def get_scheme_from_file(file_name) -> RotationScheme:
 def get_args(argv):
     ap = argparse.ArgumentParser(
         description="Calculates a backup media rotation plan given a rotation "
-        + "schema."
+        + "scheme."
     )
     # TODO: Expand description.
 
     ap.add_argument(
         "scheme_file",
         action="store",
-        help="Path to the JSON file that defines the backup rotation schema.",
+        help="Path to the JSON file that defines the backup rotation scheme.",
     )
 
     ap.add_argument(
@@ -210,7 +210,7 @@ def run_cycles(
     outlist_wdates.append(header_csv)
     outlist_detail.append(header_csv)
 
-    top_index = len(levels) - 1
+    top_level_index = len(levels) - 1
 
     plog.log_step(f"\nCycles ({scheme.cycles}):\n")
 
@@ -229,8 +229,7 @@ def run_cycles(
         for x in range(len(levels)):
             levels[x].start_cycle(cycle_num, cycle_date)
 
-        # TODO: Is this correct? Should the top level not pull from lower?
-        for x in range(top_index, 0, -1):
+        for x in range(top_level_index, 0, -1):
             levels[x].pull_from_lower_level()
 
         levels[0].free_slot()
@@ -243,7 +242,7 @@ def run_cycles(
 
         levels[0].next_slot()
 
-        all_cycles.append(levels[top_index].get_slots_in_use())
+        all_cycles.append(levels[top_level_index].get_slots_in_use())
 
         outlist_detail.append(
             get_levels_as_csv(
@@ -281,7 +280,7 @@ def main(argv):
     output_path.mkdir()
     assert output_path.exists()
 
-    filename_prefix = f"{str(output_path)}/bakplan"
+    filename_prefix = str(output_path / "bakplan")
 
     filename_output_main = f"{filename_prefix}-1.csv"
     filename_output_wdates = f"{filename_prefix}-2-wdates.csv"
@@ -293,6 +292,7 @@ def main(argv):
     filename_output_summary = f"{filename_prefix}-8-summary.txt"
 
     filename_log = str(output_path / "bakplan_log.txt")
+
     plog = Plogger(
         log_file_name=filename_log,
         log_immediate=False,
