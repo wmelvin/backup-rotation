@@ -75,6 +75,9 @@ def test_run_cycles():
     # print_a_list = flog.steps
     # print_a_list = flog.entries
     # print_a_list = bakplan.outlist_main
+    # print_a_list = bakplan.outlist_wdates
+    # print_a_list = bakplan.outlist_detail
+    # print_a_list = bakplan.all_cycles
     for item in print_a_list:
         print(item)
     assert 0 == len(print_a_list)

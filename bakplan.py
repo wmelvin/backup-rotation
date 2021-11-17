@@ -70,7 +70,7 @@ def get_levels_as_csv(prefix, levels_list, add_notes, do_diff, do_dates):
     for action in actions_list:
         actions_str += f"{action} "
 
-    s += ',"{0}","{1}"\n'.format(actions_str.strip(), add_notes)
+    s += ',"{0}","{1}"'.format(actions_str.strip(), add_notes)
     return s
 
 
@@ -205,7 +205,7 @@ def run_cycles(
     header_csv = '"cycle","date"'
     for x in range(len(levels)):
         header_csv += f"{levels[x].csvfrag_header()},."
-    header_csv += ',"Actions", "Notes"\n'
+    header_csv += ',"Actions", "Notes"'
     outlist_main.append(header_csv)
     outlist_wdates.append(header_csv)
     outlist_detail.append(header_csv)
@@ -257,6 +257,13 @@ def run_cycles(
         outlist_wdates.append(
             get_levels_as_csv(info_prefix, levels, "", True, True)
         )
+
+
+def output_list_to_file(outlist, file_name):
+    print(f"Writing {file_name}")
+    with open(file_name, "w") as f:
+        for s in outlist:
+            f.write(f"{s}\n")
 
 
 def main(argv):
@@ -326,17 +333,11 @@ def main(argv):
 
     run_cycles(scheme, levels, plog)
 
-    print(f"Writing {filename_output_main}")
-    with open(filename_output_main, "w") as out_file:
-        out_file.writelines(outlist_main)
+    output_list_to_file(outlist_main, filename_output_main)
 
-    print(f"Writing {filename_output_wdates}")
-    with open(filename_output_wdates, "w") as out_file:
-        out_file.writelines(outlist_wdates)
+    output_list_to_file(outlist_wdates, filename_output_wdates)
 
-    print(f"Writing {filename_output_detail}")
-    with open(filename_output_detail, "w") as out_file:
-        out_file.writelines(outlist_detail)
+    output_list_to_file(outlist_detail, filename_output_detail)
 
     print(f"Writing {filename_output_range}")
     min_days = 0
