@@ -41,7 +41,7 @@ def get_rotation_scheme_json():
             "rotation_scheme": {
                 "name": "Test1",
                 "startdate": "2021-01-01",
-                "cycles": "10",
+                "cycles": "12",
                 "period": "weeks",
                 "levels": [
                     {"level": 1, "slots": 2, "interval": 1},
