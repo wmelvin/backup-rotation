@@ -29,7 +29,7 @@ RotationScheme = namedtuple(
 
 pub_version = "0.1.dev1"
 
-app_version = "211117.1"
+app_version = "211122.1"
 
 app_label = f"bakplan.py version {app_version} ({pub_version})"
 
@@ -421,11 +421,14 @@ def main(argv):
                 )
             )
         out_file.write(f"\nTotal media slots: {total_slots}\n")
-        out_file.write(
-            "\nDays from oldest to newest backup (after all slots full):\n"
-        )
-        out_file.write(f"  Minimum days = {min_days}\n")
-        out_file.write(f"  Maximum days = {max_days}\n")
+        out_file.write("\nDays from oldest to newest backup:\n")
+        if 0 < max_days:
+            out_file.write(f"  Minimum days = {min_days}\n")
+            out_file.write(f"  Maximum days = {max_days}\n")
+        else:
+            out_file.write(
+                "  N/A (Not enough cycles to fill all rotation slots.)\n"
+            )
 
     debug_log_levels(opts, levels, plog)
 
