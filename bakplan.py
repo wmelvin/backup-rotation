@@ -287,16 +287,16 @@ def main(argv):
     output_path.mkdir()
     assert output_path.exists()
 
-    filename_prefix = str(output_path / "bakplan")
+    outname_prefix = str(output_path / "bakplan")
 
-    filename_output_main = f"{filename_prefix}-1.csv"
-    filename_output_wdates = f"{filename_prefix}-2-wdates.csv"
-    filename_output_detail = f"{filename_prefix}-3-detail.csv"
-    filename_output_cycles = f"{filename_prefix}-4-cycles.csv"
-    filename_output_usage = f"{filename_prefix}-5-usage.csv"
-    filename_output_range = f"{filename_prefix}-6-range.csv"
-    filename_output_steps = f"{filename_prefix}-7-steps.txt"
-    filename_output_summary = f"{filename_prefix}-8-summary.txt"
+    outname_main = f"{outname_prefix}-1.csv"
+    outname_wdates = f"{outname_prefix}-2-wdates.csv"
+    outname_detail = f"{outname_prefix}-3-detail.csv"
+    outname_cycles = f"{outname_prefix}-4-cycles.csv"
+    outname_usage = f"{outname_prefix}-5-usage.csv"
+    outname_range = f"{outname_prefix}-6-range.csv"
+    outname_steps = f"{outname_prefix}-7-steps.txt"
+    outname_summary = f"{outname_prefix}-8-summary.txt"
 
     filename_log = str(output_path / "bakplan_log.txt")
 
@@ -304,7 +304,7 @@ def main(argv):
         log_file_name=filename_log,
         log_immediate=False,
         log_timestamp=False,
-        steps_file_name=filename_output_steps,
+        steps_file_name=outname_steps,
         steps_immediate=False,
     )
 
@@ -333,16 +333,16 @@ def main(argv):
 
     run_cycles(scheme, levels, plog)
 
-    output_list_to_file(outlist_main, filename_output_main)
+    output_list_to_file(outlist_main, outname_main)
 
-    output_list_to_file(outlist_wdates, filename_output_wdates)
+    output_list_to_file(outlist_wdates, outname_wdates)
 
-    output_list_to_file(outlist_detail, filename_output_detail)
+    output_list_to_file(outlist_detail, outname_detail)
 
-    print(f"Writing {filename_output_range}")
+    print(f"Writing {outname_range}")
     min_days = 0
     max_days = 0
-    with open(filename_output_range, "w") as out_file:
+    with open(outname_range, "w") as out_file:
         out_file.write("Cycle,FirstDate,LastDate,Days\n")
         n = 0
         for cycle in all_cycles:
@@ -374,8 +374,8 @@ def main(argv):
 
         all_dates.sort()
 
-        print(f"Writing {filename_output_cycles}")
-        with open(filename_output_cycles, "w") as out_file:
+        print(f"Writing {outname_cycles}")
+        with open(outname_cycles, "w") as out_file:
             for d in all_dates:
                 s = d
                 for cycle in all_cycles:
@@ -393,8 +393,8 @@ def main(argv):
                     s += slot_str
                 out_file.write(f"{s}\n")
 
-    print(f"Writing {filename_output_usage}")
-    with open(filename_output_usage, "w") as out_file:
+    print(f"Writing {outname_usage}")
+    with open(outname_usage, "w") as out_file:
         out_file.write("Level,Slot,UseCount\n")
         for x in range(len(levels)):
             for y in range(levels[x].num_slots):
@@ -404,8 +404,8 @@ def main(argv):
                 s = f"{levels[x].level},{a},{n}\n"
                 out_file.write(s)
 
-    print(f"Writing {filename_output_summary}")
-    with open(filename_output_summary, "w") as out_file:
+    print(f"Writing {outname_summary}")
+    with open(outname_summary, "w") as out_file:
         out_file.write(f"{app_label}\n")
         out_file.write(
             f"\nRun started at {run_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
@@ -429,7 +429,7 @@ def main(argv):
 
     debug_log_levels(opts, levels, plog)
 
-    print(f"Writing {filename_output_steps}")
+    print(f"Writing {outname_steps}")
     plog.save_steps()
 
     print(f"Writing {filename_log}")
