@@ -53,4 +53,4 @@ optional arguments:
 
 I did settle on a scheme to use, and copied the rotation plan from the main output file (`bakrot-*-1.csv`) to a spreadsheet where I track the actual backups (the script was originally named "bakrot.py" - short for "backup rotation").
 
-My initial plan was to rotate a set of external hard drives at a *weekly* backup interval, and keep a given number of backups at different (increasingly longer) retention intervals. In practice, I have not always done the backups weekly. That renders the *dates* in the output obsolete beyond the initial assessment of the scheme. The important output is the rotation plan, which needs to be followed regardless of the schedule. The schedule has to be flexible to accomodate *reality*.
+My initial plan was to rotate a set of external hard drives at a *weekly* backup interval, and keep a given number of backups at different (increasingly longer) retention intervals. In practice, I have not always done the backups weekly. That renders the *dates* in the output obsolete beyond the initial assessment of the scheme. The important output is the *rotation plan*, which may be followed regardless of the original schedule.

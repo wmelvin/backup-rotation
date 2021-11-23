@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------
 # bakplan.py
 #
-# Backup roation calculator.
+# Backup rotation calculator.
 # ---------------------------------------------------------------------
 
 import argparse
@@ -29,9 +29,9 @@ RotationScheme = namedtuple(
 
 pub_version = "0.1.dev1"
 
-app_version = "211122.1"
+app_version = "211123.1"
 
-app_label = f"bakplan.py version {app_version} ({pub_version})"
+app_label = f"bakplan.py version {pub_version} (mod {app_version})"
 
 
 all_cycles = []
@@ -276,12 +276,14 @@ def main(argv):
     assert 0 < len(scheme.name)
     assert 0 < len(scheme.levels)
 
-    output_path = Path.cwd() / "output"
-    assert output_path.exists()
+    output_home = Path.cwd() / "output"
+    if not output_home.exists():
+        output_home.mkdir()
 
-    output_path = output_path / "bakplan_{0}_{1}".format(
+    output_path = output_home / "bakplan_{0}_{1}".format(
         run_at.strftime("%Y%m%d_%H%M%S"), scheme.name
     )
+    #  Per-run output directory should not exist at this point.
     assert not output_path.exists()
 
     output_path.mkdir()
@@ -374,24 +376,24 @@ def main(argv):
 
         all_dates.sort()
 
-        print(f"Writing {outname_cycles}")
-        with open(outname_cycles, "w") as out_file:
-            for d in all_dates:
-                s = d
-                for cycle in all_cycles:
-                    slot_str = ","
-                    for item in cycle:
-                        item_date = item[0].strftime("%Y-%m-%d")
-                        if item_date == d:
-                            slot_str = ',"{0} U{1} L{2}.{3}"'.format(
-                                to_alpha_label(item[1]),
-                                item[2],
-                                item[3],
-                                item[4],
-                            )
-                            break
-                    s += slot_str
-                out_file.write(f"{s}\n")
+    print(f"Writing {outname_cycles}")
+    with open(outname_cycles, "w") as out_file:
+        for d in all_dates:
+            s = d
+            for cycle in all_cycles:
+                slot_str = ","
+                for item in cycle:
+                    item_date = item[0].strftime("%Y-%m-%d")
+                    if item_date == d:
+                        slot_str = ',"{0} U{1} L{2}.{3}"'.format(
+                            to_alpha_label(item[1]),
+                            item[2],
+                            item[3],
+                            item[4],
+                        )
+                        break
+                s += slot_str
+            out_file.write(f"{s}\n")
 
     print(f"Writing {outname_usage}")
     with open(outname_usage, "w") as out_file:

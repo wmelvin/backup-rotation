@@ -3,6 +3,7 @@
 
 from datetime import date
 from importlib import reload
+from pathlib import Path
 from textwrap import dedent
 
 import backup_retention
@@ -81,3 +82,13 @@ def test_run_cycles():
     for item in print_a_list:
         print(item)
     assert 0 == len(print_a_list)
+
+
+def test_project_scheme_files():
+    p = Path.cwd()
+    files = list(p.glob("rotation-scheme-*.json"))
+    for file in files:
+        print(file)
+        scheme = bakplan.get_scheme_from_file(file)
+        assert 0 < len(scheme.name)
+    # assert 0
