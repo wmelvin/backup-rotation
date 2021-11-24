@@ -1,0 +1,15 @@
+{
+    "rotation_scheme": {
+        "name": "2",
+        "startdate": "2020-07-05",
+        "cycles": "259",
+        "period": "weeks",
+        "levels": [
+            {"level": 1, "slots": 7, "interval": 1},
+            {"level": 2, "slots": 4, "interval": 2},
+            {"level": 3, "slots": 4, "interval": 4},
+            {"level": 4, "slots": 2, "interval": 8},
+            {"level": 5, "slots": 2, "interval": 16}
+        ]    
+    }
+}

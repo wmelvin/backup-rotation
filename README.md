@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This command-line tool, writen in Python, calculates a plan for rotating backup media with different levels of retention.
+This command-line tool, written in Python, calculates a plan for rotating backup media with different levels of retention.
 
 It was built with two purposes in mind:
 - Explore different schemes for rotating my personal backup media.

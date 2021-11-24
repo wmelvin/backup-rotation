@@ -1,0 +1,13 @@
+{
+    "rotation_scheme": {
+        "name": "T",
+        "startdate": "2020-07-05",
+        "cycles": "12",
+        "period": "weeks",
+        "levels": [
+            {"level": 1, "slots": 2, "interval": 1},
+            {"level": 2, "slots": 2, "interval": 2},
+            {"level": 3, "slots": 2, "interval": 4}
+        ]    
+    }
+}
