@@ -29,7 +29,7 @@ RotationScheme = namedtuple(
 
 pub_version = "0.1.dev1"
 
-app_version = "211123.1"
+app_version = "211220.1"
 
 app_label = f"bakplan.py version {pub_version} (mod {app_version})"
 
@@ -38,6 +38,28 @@ all_cycles = []
 outlist_main = []
 outlist_wdates = []
 outlist_detail = []
+
+
+def date_fromisoformat(dts):
+    """
+    Take an ISO format date string and return a date type.
+    The date.fromisoformat method was new in Python 3.7. This replacement
+    works on 3.6.9, which the author is still has on some machines.
+    It may work on older versions, but that is not the target.
+    """
+    #  ISO format: yyyy-mm-dd
+    #              0....:....1
+    try:
+        assert len(dts) == 10
+        y = int(dts[0:4])
+        assert dts[4] == "-"
+        m = int(dts[5:7])
+        assert dts[7] == "-"
+        d = int(dts[8:10])
+        dt = date(y, m, d)
+    except Exception:
+        raise ValueError(f"Invalid date string: '{dts}'")
+    return dt
 
 
 def debug_log_levels(
@@ -105,7 +127,7 @@ def get_scheme_from_json(json_str: str, source_name: str) -> RotationScheme:
 
         scheme = RotationScheme(
             scheme_raw["name"],
-            date.fromisoformat(scheme_raw["startdate"]),
+            date_fromisoformat(scheme_raw["startdate"]),
             int(scheme_raw["cycles"]),
             period,
             scheme_raw["levels"],
